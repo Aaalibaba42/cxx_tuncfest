@@ -3,3 +3,5 @@ main
 .cache
 compile_commands.json
 
+# The readme is kinda cringe for now, will add it later
+README.md
