@@ -1,0 +1,20 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-Wall",
+      "-Werror",
+      "-Wextra",
+      "-Wvla",
+      "-Wold-style-cast",
+      "-std=c++23",
+      "-o",
+      "main",
+      "main.cc"
+    ],
+    "directory": "/home/ali/hsh/workspace/perso/cxx_tuncfest",
+    "file": "/home/ali/hsh/workspace/perso/cxx_tuncfest/main.cc",
+    "output": "/home/ali/hsh/workspace/perso/cxx_tuncfest/main"
+  }
+]
