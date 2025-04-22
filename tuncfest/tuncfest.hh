@@ -9,10 +9,20 @@
 #include <string>
 #include <cstring>
 
+#define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
+    struct NAME                                                                \
+    {                                                                          \
+        static constexpr std::string_view name = #NAME;                        \
+        static constexpr std::string_view input = INPUT_STR;                   \
+        static constexpr std::string_view expected_output = OUTPUT_STR;        \
+        static constexpr int expected_exit_code = EXIT_CODE;                   \
+    };
+
 // TODO instead of TestCases, make a concept for better checking and error
 // messages
 //
 // TODO Lots of refactoring, this is very monolithic
+//
 template <char const* BinaryPath, typename... TestCases>
 struct FunctionalTestRunner
 {

@@ -4,50 +4,12 @@
 
 static char const binPath[] = "/usr/bin/cat";
 
-struct Test1
-{
-    static constexpr std::string_view name = "FirstTest";
-    // TODO make this a std::optional
-    static constexpr std::string_view input = "42\n";
-
-    // NOTE this shouldn't be an optional since every process has a
-    // defined captured output, that might be empty
-    static constexpr std::string_view expected_output = "42\n";
-    static constexpr int expected_exit_code = 0;
-};
-
-struct Test2
-{
-    static constexpr std::string_view name = "SecondTest";
-    // TODO make this a std::optional
-    static constexpr std::string_view input = "Very good test";
-
-    // NOTE this shouldn't be an optional since every process has a
-    // defined captured output, that might be empty
-    static constexpr std::string_view expected_output = "Very good test";
-    static constexpr int expected_exit_code = 0;
-};
+// #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)
+ADD_TEST(FirstTest, "42\n", "42\n", 0);
+ADD_TEST(SecondTest, "43", "43", 0);
 
 /*
-VISION:
-
-Instead of defining the types for the tests, having macros like this:
-
-    ADD_TEST(name, input, expected_output, expected_exit_code)
-
-Something like this:
-
-    #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                   \
-        struct NAME {                                                          \
-            static constexpr std::string_view name = #NAME;                    \
-            static constexpr std::string_view input = INPUT_STR;               \
-            static constexpr std::string_view expected_output = OUTPUT_STR;    \
-            static constexpr int expected_exit_code = EXIT_CODE;               \
-        };
-
-+ Maybe with c++26 introspection, I can get back the name of the class directly
-instead of making it a field.
-
+Notepad:
 
 Having TestSuites with names, so that you could have:
     Testsuite<TestSuiteName, binPath, TestStruct...>::run_all_tests();
@@ -56,5 +18,5 @@ Having TestSuites with names, so that you could have:
 
 int main(void)
 {
-    FunctionalTestRunner<binPath, Test1, Test2>::run_all_tests();
+    FunctionalTestRunner<binPath, FirstTest, SecondTest>::run_all_tests();
 }
