@@ -1,10 +1,7 @@
 #include "tuncfest.hh"
 
-#include <string_view>
-
 static char const binPath[] = "/usr/bin/cat";
 
-// #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)
 ADD_TEST(FirstTest, "42\n", "42\n", 0);
 ADD_TEST(SecondTest, "43", "43", 0);
 

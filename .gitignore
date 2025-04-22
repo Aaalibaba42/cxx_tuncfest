@@ -3,6 +3,3 @@ main
 .cache
 compile_commands.json
 build/
-
-# The readme is kinda cringe for now, will add it later
-README.md
