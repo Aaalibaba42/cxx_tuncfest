@@ -3,7 +3,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <sstream>
-#include <string>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -109,6 +108,7 @@ template <char const* BinaryPath, TestCase... TestCases>
 void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
 {
     constexpr int MAX_EVENTS = 64;
+
     int epoll_fd = epoll_create1(0);
     if (epoll_fd == -1)
     {
@@ -121,20 +121,16 @@ void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
         int stdout_fd;
         pid_t pid;
         std::ostringstream output;
-        std::string expected_output;
+        std::string_view expected_output;
         int expected_exit_code;
-        std::string name;
+        std::string_view name;
     };
 
     std::array<TestProcess, parameter_pack_size<TestCases...>::value> processes;
-    std::size_t process_num = 0ull;
+    std::size_t process_count = 0;
 
-    // Lambda to fork and run a test
-    //
-    // TODO stderr
-    auto spawn_test = [&](auto test) {
-        int stdin_pipe[2];
-        int stdout_pipe[2];
+    auto create_process = [&](auto test) -> TestProcess {
+        int stdin_pipe[2], stdout_pipe[2];
         pipe(stdin_pipe);
         pipe(stdout_pipe);
 
@@ -143,6 +139,7 @@ void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
         {
             dup2(stdin_pipe[0], STDIN_FILENO);
             dup2(stdout_pipe[1], STDOUT_FILENO);
+
             close(stdin_pipe[1]);
             close(stdout_pipe[0]);
 
@@ -150,96 +147,90 @@ void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
             perror("execl");
             exit(127);
         }
-        else
-        {
-            close(stdin_pipe[0]);
-            close(stdout_pipe[1]);
 
-            write(stdin_pipe[1], test.input.data(), test.input.size());
-            close(stdin_pipe[1]);
+        close(stdin_pipe[0]);
+        close(stdout_pipe[1]);
 
-            fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
+        write(stdin_pipe[1], test.input.data(), test.input.size());
+        close(stdin_pipe[1]);
 
-            epoll_event ev;
-            ev.events = EPOLLIN;
-            ev.data.fd = stdout_pipe[0];
-            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
+        fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
 
-            processes[process_num] = { .stdout_fd = stdout_pipe[0],
-                                       .pid = pid,
-                                       .output = "",
-                                       .expected_output =
-                                           std::string(test.expected_output),
-                                       .expected_exit_code =
-                                           test.expected_exit_code,
-                                       .name = std::string(test.name) };
-            ++process_num;
-        }
+        epoll_event ev{ .events = EPOLLIN, .data = { .fd = stdout_pipe[0] } };
+        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
+
+        return TestProcess{ .stdout_fd = stdout_pipe[0],
+                            .pid = pid,
+                            .output = {},
+                            .expected_output = test.expected_output,
+                            .expected_exit_code = test.expected_exit_code,
+                            .name = test.name };
     };
 
-    // Spawn all tests
-    (spawn_test(TestCases{}), ...);
+    auto spawn_all_tests = [&]() {
+        ((processes[process_count++] = create_process(TestCases{})), ...);
+    };
 
-    std::array<char, 1024> buf;
-    int remaining = processes.size();
+    auto collect_outputs = [&]() {
+        std::array<char, 1024> buffer;
+        int remaining = processes.size();
 
-    while (remaining > 0)
-    {
-        epoll_event events[MAX_EVENTS];
-        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        for (int i = 0; i < n; ++i)
+        while (remaining > 0)
         {
-            int fd = events[i].data.fd;
-            for (auto& proc : processes)
+            epoll_event events[MAX_EVENTS];
+            int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+
+            for (int i = 0; i < n; ++i)
             {
-                if (proc.stdout_fd == fd)
+                int fd = events[i].data.fd;
+                for (auto& proc : processes)
                 {
-                    ssize_t count = read(fd, buf.data(), buf.size());
-                    if (count > 0)
+                    if (proc.stdout_fd == fd)
                     {
-                        proc.output.append(buf.data(), count);
-                    }
-                    else if (count == 0)
-                    {
-                        close(fd);
-                        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                        remaining--;
+                        ssize_t count = read(fd, buffer.data(), buffer.size());
+                        if (count > 0)
+                        {
+                            proc.output.write(buffer.data(), count);
+                        }
+                        else if (count == 0)
+                        {
+                            close(fd);
+                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                            remaining--;
+                        }
                     }
                 }
             }
         }
-    }
+    };
 
-    for (auto& proc : processes)
-    {
-        int status = 0;
-        waitpid(proc.pid, &status, 0);
-        bool success = true;
-
-        int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-
-        if (exit_code != proc.expected_exit_code)
+    auto evaluate_results = [&]() {
+        for (auto& proc : processes)
         {
-            success = false;
+            int status = 0;
+            waitpid(proc.pid, &status, 0);
+
+            int actual_exit = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+            bool passed = (actual_exit == proc.expected_exit_code)
+                && (proc.output.str() == proc.expected_output);
+
+            std::cout << "[" << proc.name << "] "
+                      << (passed ? "✅ PASS" : "❌ FAIL") << "\n";
+
+            if (!passed)
+            {
+                std::cout << "  Expected output: \"" << proc.expected_output
+                          << "\"\n"
+                          << "  Actual output:   \""
+                          << std::move(proc.output).str() << "\"\n"
+                          << "  Expected exit: " << proc.expected_exit_code
+                          << ", Actual: " << actual_exit << '\n';
+            }
         }
+    };
 
-        if (proc.output != proc.expected_output)
-        {
-            success = false;
-        }
-
-        std::cout << "[" << proc.name << "] "
-                  << (success ? "✅ PASS" : "❌ FAIL") << "\n";
-
-        if (!success)
-        {
-            std::cout << "  Expected output: \"" << proc.expected_output
-                      << "\"\n";
-            std::cout << "  Actual output:   \"" << proc.output << "\"\n";
-            std::cout << "  Expected exit: " << proc.expected_exit_code
-                      << ", Actual: " << exit_code << "\n";
-        }
-    }
-
+    spawn_all_tests();
+    collect_outputs();
+    evaluate_results();
     close(epoll_fd);
 }
