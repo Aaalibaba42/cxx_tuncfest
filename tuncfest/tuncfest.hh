@@ -2,7 +2,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
-#include <sstream>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -94,86 +93,104 @@ struct parameter_pack_size<>
 template <typename T, typename... Ts>
 struct parameter_pack_size<T, Ts...>
 {
-    static constexpr std::size_t value = parameter_pack_size<Ts...>::value + 1;
+    static constexpr std::size_t value = 1 + parameter_pack_size<Ts...>::value;
 };
 
-template <char const* BinaryPath, TestCase... TestCases>
-class FunctionalTestRunner
+// ostringstreams are notoriously heavy, this should be substancially
+// quicker
+struct OutputBuffer
 {
-public:
-    static void run_all_tests();
-};
+    char data[4096];
+    std::size_t size = 0;
 
-template <char const* BinaryPath, TestCase... TestCases>
-void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
-{
-    constexpr int MAX_EVENTS = 64;
-
-    int epoll_fd = epoll_create1(0);
-    if (epoll_fd == -1)
+    void append(char const* src, std::size_t len)
     {
-        perror("epoll_create1");
-        return;
+        if (size + len < sizeof(data))
+        {
+            std::memcpy(data + size, src, len);
+            size += len;
+        }
     }
 
-    struct TestProcess
+    std::string_view view() const
     {
-        int stdout_fd;
-        pid_t pid;
-        std::ostringstream output;
-        std::string_view expected_output;
-        int expected_exit_code;
-        std::string_view name;
+        return { data, size };
+    }
+};
+
+struct RuntimeProcess
+{
+    int stdout_fd;
+    pid_t pid;
+    OutputBuffer output;
+};
+
+struct StaticProcessData
+{
+    std::string_view input;
+    std::string_view expected_output;
+    int expected_exit_code;
+    std::string_view name;
+};
+
+template <char const* BinaryPath, TestCase... Tests>
+struct FunctionalTestRunner
+{
+    static constexpr std::size_t NumTests =
+        parameter_pack_size<Tests...>::value;
+
+    static constexpr std::array<StaticProcessData, NumTests> metadata = {
+        { StaticProcessData{ Tests::input, Tests::expected_output,
+                             Tests::expected_exit_code, Tests::name }... }
     };
 
-    std::array<TestProcess, parameter_pack_size<TestCases...>::value> processes;
-    std::size_t process_count = 0;
-
-    auto create_process = [&](auto test) -> TestProcess {
-        int stdin_pipe[2], stdout_pipe[2];
-        pipe(stdin_pipe);
-        pipe(stdout_pipe);
-
-        pid_t pid = fork();
-        if (pid == 0)
+    static void run_all_tests()
+    {
+        constexpr int MAX_EVENTS = 64;
+        int epoll_fd = epoll_create1(0);
+        if (epoll_fd == -1)
         {
-            dup2(stdin_pipe[0], STDIN_FILENO);
-            dup2(stdout_pipe[1], STDOUT_FILENO);
-
-            close(stdin_pipe[1]);
-            close(stdout_pipe[0]);
-
-            execl(BinaryPath, BinaryPath, nullptr);
-            perror("execl");
-            exit(127);
+            perror("epoll_create1");
+            return;
         }
 
-        close(stdin_pipe[0]);
-        close(stdout_pipe[1]);
+        std::array<RuntimeProcess, NumTests> processes;
 
-        write(stdin_pipe[1], test.input.data(), test.input.size());
-        close(stdin_pipe[1]);
+        for (std::size_t i = 0; i < NumTests; ++i)
+        {
+            int stdin_pipe[2], stdout_pipe[2];
+            pipe(stdin_pipe);
+            pipe(stdout_pipe);
 
-        fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
+            pid_t pid = fork();
+            if (pid == 0)
+            {
+                dup2(stdin_pipe[0], STDIN_FILENO);
+                dup2(stdout_pipe[1], STDOUT_FILENO);
+                close(stdin_pipe[1]);
+                close(stdout_pipe[0]);
+                execl(BinaryPath, BinaryPath, nullptr);
+                perror("execl");
+                _exit(127);
+            }
 
-        epoll_event ev{ .events = EPOLLIN, .data = { .fd = stdout_pipe[0] } };
-        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
+            close(stdin_pipe[0]);
+            close(stdout_pipe[1]);
+            write(stdin_pipe[1], metadata[i].input.data(),
+                  metadata[i].input.size());
+            close(stdin_pipe[1]);
 
-        return TestProcess{ .stdout_fd = stdout_pipe[0],
-                            .pid = pid,
-                            .output = {},
-                            .expected_output = test.expected_output,
-                            .expected_exit_code = test.expected_exit_code,
-                            .name = test.name };
-    };
+            fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
 
-    auto spawn_all_tests = [&]() {
-        ((processes[process_count++] = create_process(TestCases{})), ...);
-    };
+            epoll_event ev{ .events = EPOLLIN,
+                            .data = { .fd = stdout_pipe[0] } };
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
 
-    auto collect_outputs = [&]() {
+            processes[i] = RuntimeProcess{ stdout_pipe[0], pid, {} };
+        }
+
         std::array<char, 1024> buffer;
-        int remaining = processes.size();
+        std::size_t remaining = NumTests;
 
         while (remaining > 0)
         {
@@ -183,54 +200,51 @@ void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
             for (int i = 0; i < n; ++i)
             {
                 int fd = events[i].data.fd;
-                for (auto& proc : processes)
+                for (std::size_t j = 0; j < NumTests; ++j)
                 {
-                    if (proc.stdout_fd == fd)
+                    if (processes[j].stdout_fd == fd)
                     {
                         ssize_t count = read(fd, buffer.data(), buffer.size());
                         if (count > 0)
                         {
-                            proc.output.write(buffer.data(), count);
+                            processes[j].output.append(buffer.data(), count);
                         }
                         else if (count == 0)
                         {
                             close(fd);
                             epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                            remaining--;
+                            --remaining;
                         }
+                        break;
                     }
                 }
             }
         }
-    };
 
-    auto evaluate_results = [&]() {
-        for (auto& proc : processes)
+        for (std::size_t i = 0; i < NumTests; ++i)
         {
             int status = 0;
-            waitpid(proc.pid, &status, 0);
+            waitpid(processes[i].pid, &status, 0);
+            int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
-            int actual_exit = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-            bool passed = (actual_exit == proc.expected_exit_code)
-                && (proc.output.str() == proc.expected_output);
+            bool passed = exit_code == metadata[i].expected_exit_code
+                && processes[i].output.view() == metadata[i].expected_output;
 
-            std::cout << "[" << proc.name << "] "
+            std::cout << "[" << metadata[i].name << "] "
                       << (passed ? "✅ PASS" : "❌ FAIL") << "\n";
 
             if (!passed)
             {
-                std::cout << "  Expected output: \"" << proc.expected_output
-                          << "\"\n"
+                std::cout << "  Expected output: \""
+                          << metadata[i].expected_output << "\"\n"
                           << "  Actual output:   \""
-                          << std::move(proc.output).str() << "\"\n"
-                          << "  Expected exit: " << proc.expected_exit_code
-                          << ", Actual: " << actual_exit << '\n';
+                          << processes[i].output.view() << "\"\n"
+                          << "  Expected exit: "
+                          << metadata[i].expected_exit_code
+                          << ", Actual: " << exit_code << '\n';
             }
         }
-    };
 
-    spawn_all_tests();
-    collect_outputs();
-    evaluate_results();
-    close(epoll_fd);
-}
+        close(epoll_fd);
+    }
+};
