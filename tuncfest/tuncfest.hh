@@ -55,6 +55,21 @@ template <typename T>
 concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
     && HasConstexprOutput<T> && HasConstexprExitCode<T>;
 
+template <typename T>
+concept ValidTestCase = requires {
+    []() static constexpr {
+        static_assert(HasConstexprName<T>,
+                      "TestCase is missing a valid `name` member.");
+        static_assert(HasConstexprInput<T>,
+                      "TestCase is missing a valid `input` member.");
+        static_assert(HasConstexprOutput<T>,
+                      "TestCase is missing a valid `expected_output` member.");
+        static_assert(
+            HasConstexprExitCode<T>,
+            "TestCase is missing a valid `expected_exit_code` member.");
+    }();
+};
+
 #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
     struct NAME                                                                \
     {                                                                          \
@@ -62,11 +77,10 @@ concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
         static constexpr std::string_view input = INPUT_STR;                   \
         static constexpr std::string_view expected_output = OUTPUT_STR;        \
         static constexpr int expected_exit_code = EXIT_CODE;                   \
-    };
+    };                                                                         \
+    static_assert(ValidTestCase<NAME>,                                         \
+                  "#NAME does not fulfill the TestCase requirements");
 
-// TODO instead of TestCases, make a concept for better checking and error
-// messages
-//
 // TODO Lots of refactoring, this is very monolithic
 //
 template <char const* BinaryPath, TestCase... TestCases>
