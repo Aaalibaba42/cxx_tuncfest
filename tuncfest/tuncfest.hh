@@ -70,6 +70,7 @@ concept ValidTestCase = requires {
 };
 
 // TODO Add expected std_err and std::string command[] to pass to the binary
+// TODO Add timeout after which we kill the process
 #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
     struct NAME                                                                \
     {                                                                          \
@@ -136,17 +137,21 @@ struct StaticProcessData
 template <char const* BinaryPath, TestCase... Tests>
 struct FunctionalTestRunner
 {
+    // Number of tests passed to this template instantiation
     static constexpr std::size_t NumTests =
         parameter_pack_size<Tests...>::value;
 
+    // Prefill metadata for the tests in comptime, since these are available
     static constexpr std::array<StaticProcessData, NumTests> metadata = {
         { StaticProcessData{ Tests::input, Tests::expected_output,
                              Tests::expected_exit_code, Tests::name }... }
     };
 
+    // Main function for the runner
     static void run_all_tests()
     {
         constexpr int MAX_EVENTS = 64;
+        // Epoll to let us run the tests in parallel while collecting I/O
         int epoll_fd = epoll_create1(0);
         if (epoll_fd == -1)
         {
@@ -154,46 +159,58 @@ struct FunctionalTestRunner
             return;
         }
 
+        // Start every test in parallel
         std::array<RuntimeProcess, NumTests> processes;
-
         for (std::size_t i = 0; i < NumTests; ++i)
         {
+            // Piping stdin and stdout (TODO stderr)
             int stdin_pipe[2], stdout_pipe[2];
             pipe(stdin_pipe);
             pipe(stdout_pipe);
 
+            // New process
             pid_t pid = fork();
             if (pid == 0)
             {
+                // Link the pipes in the child
                 dup2(stdin_pipe[0], STDIN_FILENO);
                 dup2(stdout_pipe[1], STDOUT_FILENO);
                 close(stdin_pipe[1]);
                 close(stdout_pipe[0]);
+                // TODO Command arguments would go here once implemented
                 execl(BinaryPath, BinaryPath, nullptr);
                 perror("execl");
                 _exit(127);
             }
 
+            // In the parent, close our side of the pipe
             close(stdin_pipe[0]);
             close(stdout_pipe[1]);
+            // Send the stdin data through the pipe
             write(stdin_pipe[1], metadata[i].input.data(),
                   metadata[i].input.size());
+            // Close the stdin pipe
             close(stdin_pipe[1]);
 
+            // Make the stdout nonblocking
             fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
 
+            // Subscribe the process's stdout to the epoll
             epoll_event ev{ .events = EPOLLIN,
                             .data = { .fd = stdout_pipe[0] } };
             epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
 
+            // Fill the runtime struct
             processes[i] = RuntimeProcess{ stdout_pipe[0], pid, {} };
         }
 
+        // Let the tests run while collecting the data
         std::array<char, 1024> buffer;
         std::size_t remaining = NumTests;
-
+        // While tests are still running
         while (remaining > 0)
         {
+            // Get everything that happened
             epoll_event events[MAX_EVENTS];
             int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 
@@ -202,8 +219,11 @@ struct FunctionalTestRunner
                 int fd = events[i].data.fd;
                 for (std::size_t j = 0; j < NumTests; ++j)
                 {
+                    // For each event, find the corresponding process
                     if (processes[j].stdout_fd == fd)
                     {
+                        // Either we collect new stdout, or the process has
+                        // finished
                         ssize_t count = read(fd, buffer.data(), buffer.size());
                         if (count > 0)
                         {
@@ -221,6 +241,8 @@ struct FunctionalTestRunner
             }
         }
 
+        // Display The Tests Results
+        // TODO More pretty and more info
         for (std::size_t i = 0; i < NumTests; ++i)
         {
             int status = 0;
@@ -245,6 +267,7 @@ struct FunctionalTestRunner
             }
         }
 
+        // We are done (Yay \o/)
         close(epoll_fd);
     }
 };
