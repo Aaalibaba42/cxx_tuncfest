@@ -1,12 +1,14 @@
 #include "tuncfest.hh"
 
-static char const binPath[] = "./foo";
+#include <string_view>
+
+static char const binPath[] = "/usr/bin/cat";
 
 struct Test1
 {
     static constexpr std::string_view name = "FirstTest";
     // TODO make this a std::optional
-    static constexpr std::string_view input = "";
+    static constexpr std::string_view input = "42\n";
 
     // NOTE this shouldn't be an optional since every process has a
     // defined captured output, that might be empty
@@ -18,11 +20,11 @@ struct Test2
 {
     static constexpr std::string_view name = "SecondTest";
     // TODO make this a std::optional
-    static constexpr std::string_view input = "";
+    static constexpr std::string_view input = "Very good test";
 
     // NOTE this shouldn't be an optional since every process has a
     // defined captured output, that might be empty
-    static constexpr std::string_view expected_output = "43\n";
+    static constexpr std::string_view expected_output = "Very good test";
     static constexpr int expected_exit_code = 0;
 };
 
