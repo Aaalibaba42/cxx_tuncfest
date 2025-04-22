@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -8,6 +9,51 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+
+template <typename T>
+concept HasConstexprName = requires {
+    requires std::is_constant_evaluated();
+    []() static constexpr {
+        auto& name = T::name;
+        static_assert(std::is_same_v<decltype(name), std::string_view const&>,
+                      "The test does contain a name");
+    }();
+};
+
+template <typename T>
+concept HasConstexprInput = requires {
+    requires std::is_constant_evaluated();
+    []() static constexpr {
+        auto& input = T::input;
+        static_assert(std::is_same_v<decltype(input), std::string_view const&>,
+                      "The test does contain a stdin");
+    }();
+};
+
+template <typename T>
+concept HasConstexprOutput = requires {
+    requires std::is_constant_evaluated();
+    []() static constexpr {
+        auto& output = T::expected_output;
+        static_assert(std::is_same_v<decltype(output), std::string_view const&>,
+                      "The test does contain an expected stdout");
+    }();
+};
+
+template <typename T>
+concept HasConstexprExitCode = requires {
+    requires std::is_constant_evaluated();
+    []() static constexpr {
+        static_assert(
+            std::is_same_v<std::remove_cvref_t<decltype(T::expected_exit_code)>,
+                           int>,
+            "The test does contain an expected exit code");
+    }();
+};
+
+template <typename T>
+concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
+    && HasConstexprOutput<T> && HasConstexprExitCode<T>;
 
 #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
     struct NAME                                                                \
@@ -23,7 +69,7 @@
 //
 // TODO Lots of refactoring, this is very monolithic
 //
-template <char const* BinaryPath, typename... TestCases>
+template <char const* BinaryPath, TestCase... TestCases>
 struct FunctionalTestRunner
 {
     static void run_all_tests()
