@@ -1,14 +1,14 @@
-#include <type_traits>
-#include <unistd.h>
+#include <array>
+#include <cstring>
+#include <fcntl.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
-#include <vector>
-#include <array>
-#include <iostream>
-#include <string>
-#include <cstring>
+#include <type_traits>
+#include <unistd.h>
 
 template <typename T>
 concept HasConstexprName = requires {
@@ -55,6 +55,7 @@ template <typename T>
 concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
     && HasConstexprOutput<T> && HasConstexprExitCode<T>;
 
+// TODO Is this useful ?
 template <typename T>
 concept ValidTestCase = requires {
     []() static constexpr {
@@ -70,6 +71,7 @@ concept ValidTestCase = requires {
     }();
 };
 
+// TODO Add expected std_err and std::string command[] to pass to the binary
 #define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
     struct NAME                                                                \
     {                                                                          \
@@ -81,145 +83,163 @@ concept ValidTestCase = requires {
     static_assert(ValidTestCase<NAME>,                                         \
                   "#NAME does not fulfill the TestCase requirements");
 
-// TODO Lots of refactoring, this is very monolithic
-//
-template <char const* BinaryPath, TestCase... TestCases>
-struct FunctionalTestRunner
+template <typename... Ts>
+struct parameter_pack_size;
+
+template <>
+struct parameter_pack_size<>
 {
-    static void run_all_tests()
+    static constexpr std::size_t value = 0;
+};
+
+template <typename T, typename... Ts>
+struct parameter_pack_size<T, Ts...>
+{
+    static constexpr std::size_t value = parameter_pack_size<Ts...>::value + 1;
+};
+
+template <char const* BinaryPath, TestCase... TestCases>
+class FunctionalTestRunner
+{
+public:
+    static void run_all_tests();
+};
+
+template <char const* BinaryPath, TestCase... TestCases>
+void FunctionalTestRunner<BinaryPath, TestCases...>::run_all_tests()
+{
+    constexpr int MAX_EVENTS = 64;
+    int epoll_fd = epoll_create1(0);
+    if (epoll_fd == -1)
     {
-        constexpr int MAX_EVENTS = 64;
-        int epoll_fd = epoll_create1(0);
-        if (epoll_fd == -1)
+        perror("epoll_create1");
+        return;
+    }
+
+    struct TestProcess
+    {
+        int stdout_fd;
+        pid_t pid;
+        std::ostringstream output;
+        std::string expected_output;
+        int expected_exit_code;
+        std::string name;
+    };
+
+    std::array<TestProcess, parameter_pack_size<TestCases...>::value> processes;
+    std::size_t process_num = 0ull;
+
+    // Lambda to fork and run a test
+    //
+    // TODO stderr
+    auto spawn_test = [&](auto test) {
+        int stdin_pipe[2];
+        int stdout_pipe[2];
+        pipe(stdin_pipe);
+        pipe(stdout_pipe);
+
+        pid_t pid = fork();
+        if (pid == 0)
         {
-            perror("epoll_create1");
-            return;
+            dup2(stdin_pipe[0], STDIN_FILENO);
+            dup2(stdout_pipe[1], STDOUT_FILENO);
+            close(stdin_pipe[1]);
+            close(stdout_pipe[0]);
+
+            execl(BinaryPath, BinaryPath, nullptr);
+            perror("execl");
+            exit(127);
         }
-
-        struct TestProcess
+        else
         {
-            int stdout_fd;
-            pid_t pid;
-            std::string output;
-            std::string expected_output;
-            int expected_exit_code;
-            std::string name;
-        };
+            close(stdin_pipe[0]);
+            close(stdout_pipe[1]);
 
-        std::vector<TestProcess> processes;
+            write(stdin_pipe[1], test.input.data(), test.input.size());
+            close(stdin_pipe[1]);
 
-        // Lambda to fork and run a test
-        auto spawn_test = [&](auto test) {
-            int stdin_pipe[2];
-            int stdout_pipe[2];
-            pipe(stdin_pipe);
-            pipe(stdout_pipe);
+            fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
 
-            pid_t pid = fork();
-            if (pid == 0)
-            {
-                // Child
-                dup2(stdin_pipe[0], STDIN_FILENO);
-                dup2(stdout_pipe[1], STDOUT_FILENO);
-                close(stdin_pipe[1]);
-                close(stdout_pipe[0]);
+            epoll_event ev;
+            ev.events = EPOLLIN;
+            ev.data.fd = stdout_pipe[0];
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
 
-                execl(BinaryPath, BinaryPath, nullptr);
-                perror("execl");
-                exit(127);
-            }
-            else
-            {
-                // Parent
-                close(stdin_pipe[0]);
-                close(stdout_pipe[1]);
+            processes[process_num] = { .stdout_fd = stdout_pipe[0],
+                                       .pid = pid,
+                                       .output = "",
+                                       .expected_output =
+                                           std::string(test.expected_output),
+                                       .expected_exit_code =
+                                           test.expected_exit_code,
+                                       .name = std::string(test.name) };
+            ++process_num;
+        }
+    };
 
-                // Write input
-                write(stdin_pipe[1], test.input.data(), test.input.size());
-                close(stdin_pipe[1]);
+    // Spawn all tests
+    (spawn_test(TestCases{}), ...);
 
-                fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
+    std::array<char, 1024> buf;
+    int remaining = processes.size();
 
-                epoll_event ev;
-                ev.events = EPOLLIN;
-                ev.data.fd = stdout_pipe[0];
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
-
-                processes.push_back(
-                    { .stdout_fd = stdout_pipe[0],
-                      .pid = pid,
-                      .output = "",
-                      .expected_output = std::string(test.expected_output),
-                      .expected_exit_code = test.expected_exit_code,
-                      .name = std::string(test.name) });
-            }
-        };
-
-        // Spawn all tests
-        (spawn_test(TestCases{}), ...);
-
-        std::array<char, 1024> buf;
-        int remaining = processes.size();
-
-        while (remaining > 0)
+    while (remaining > 0)
+    {
+        epoll_event events[MAX_EVENTS];
+        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        for (int i = 0; i < n; ++i)
         {
-            epoll_event events[MAX_EVENTS];
-            int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-            for (int i = 0; i < n; ++i)
+            int fd = events[i].data.fd;
+            for (auto& proc : processes)
             {
-                int fd = events[i].data.fd;
-                for (auto& proc : processes)
+                if (proc.stdout_fd == fd)
                 {
-                    if (proc.stdout_fd == fd)
+                    ssize_t count = read(fd, buf.data(), buf.size());
+                    if (count > 0)
                     {
-                        ssize_t count = read(fd, buf.data(), buf.size());
-                        if (count > 0)
-                        {
-                            proc.output.append(buf.data(), count);
-                        }
-                        else if (count == 0)
-                        {
-                            close(fd);
-                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                            remaining--;
-                        }
+                        proc.output.append(buf.data(), count);
+                    }
+                    else if (count == 0)
+                    {
+                        close(fd);
+                        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                        remaining--;
                     }
                 }
             }
         }
+    }
 
-        // Collect and evaluate results
-        for (auto& proc : processes)
+    for (auto& proc : processes)
+    {
+        int status = 0;
+        waitpid(proc.pid, &status, 0);
+        bool success = true;
+
+        int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+
+        if (exit_code != proc.expected_exit_code)
         {
-            int status = 0;
-            waitpid(proc.pid, &status, 0);
-            bool success = true;
-
-            int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-
-            if (exit_code != proc.expected_exit_code)
-            {
-                success = false;
-            }
-
-            if (proc.output != proc.expected_output)
-            {
-                success = false;
-            }
-
-            std::cout << "[" << proc.name << "] "
-                      << (success ? "✅ PASS" : "❌ FAIL") << "\n";
-
-            if (!success)
-            {
-                std::cout << "  Expected output: \"" << proc.expected_output
-                          << "\"\n";
-                std::cout << "  Actual output:   \"" << proc.output << "\"\n";
-                std::cout << "  Expected exit: " << proc.expected_exit_code
-                          << ", Actual: " << exit_code << "\n";
-            }
+            success = false;
         }
 
-        close(epoll_fd);
+        if (proc.output != proc.expected_output)
+        {
+            success = false;
+        }
+
+        std::cout << "[" << proc.name << "] "
+                  << (success ? "✅ PASS" : "❌ FAIL") << "\n";
+
+        if (!success)
+        {
+            std::cout << "  Expected output: \"" << proc.expected_output
+                      << "\"\n";
+            std::cout << "  Actual output:   \"" << proc.output << "\"\n";
+            std::cout << "  Expected exit: " << proc.expected_exit_code
+                      << ", Actual: " << exit_code << "\n";
+        }
     }
-};
+
+    close(epoll_fd);
+}
