@@ -16,5 +16,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tuncfest)
 
 add_executable(main main.cc)
+add_executable(heavy heavy.cc)
 target_link_libraries(main PRIVATE tuncfest)
+target_link_libraries(heavy PRIVATE tuncfest)
 

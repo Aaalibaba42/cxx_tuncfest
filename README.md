@@ -1,13 +1,12 @@
 Tunctional Festing
 ==================
 
-I was looking for a C++ native Functional Testing framework and found
-none that I was happy with, so I decided to make my own.
+I was looking for a C++ native Functional Testing framework and found none that
+I was happy with, so I decided to make my own.
 
-There are plenty of Unit testing framework that are great, I won't
-try to do better than them, but weirdly enough, functional tests
-of external binaries (C++ or otherwise) don't seem to exist in modern
-and simple C++.
+There are plenty of Unit testing framework that are great, I won't try to do
+better than them, but weirdly enough, functional tests of external binaries (C++
+or otherwise) don't seem to exist in modern and simple C++.
 
 Objective
 ---------
@@ -33,7 +32,7 @@ To add a Test, just invoke the ADD_TEST macro with the following arguments:
 
 Just create a main function, and run the FunctionalTestRunner `run_all_tests()`
 static function, passing the path of the program to test, and as many tests as
-you want as variadic template parameters
+you want as variadic template parameters.
 
 ### Example
 
@@ -54,13 +53,12 @@ int main(void)
 Pitfalls
 --------
 
-Functional tests in parallel can be perilous, if for example the program
-has side effects that are in conflict with each others, but I'll ignore
-it for now.
+Functional tests in parallel can be perilous, if for example the program has
+side effects that are in conflict with each others, but I'll ignore it for now.
 
-I think I will either leave it to the user to understand that every test
-in a testsuite run in parallel. They can do several testsuites if this
-is not their expected behavior.
+I think I will leave it to the user to understand that every test in a testsuite
+run in parallel. They can do several testsuites if this is not their expected
+behavior.
 
 Why C++ for Functional Tests ?
 ------------------------------
