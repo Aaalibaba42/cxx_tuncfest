@@ -42,6 +42,17 @@ concept HasConstexprStdout = requires {
 };
 
 template <typename T>
+concept HasConstexprStderr = requires {
+    requires std::is_constant_evaluated();
+    []() static constexpr {
+        auto& expected_stderr = T::expected_stderr;
+        static_assert(
+            std::is_same_v<decltype(expected_stderr), std::string_view const&>,
+            "The test does contain an expected_stderr");
+    }();
+};
+
+template <typename T>
 concept HasConstexprExitCode = requires {
     requires std::is_constant_evaluated();
     []() static constexpr {
@@ -53,17 +64,29 @@ concept HasConstexprExitCode = requires {
 };
 
 template <typename T>
-concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
-    && HasConstexprStdout<T> && HasConstexprExitCode<T>;
+concept TestCase =
+    HasConstexprName<T> && HasConstexprInput<T> && HasConstexprStdout<T>
+    && HasConstexprStderr<T> && HasConstexprExitCode<T>;
 
-// TODO Add expected std_err and std::string command[] to pass to the binary
+/*
+    TODO Change this macro to a builder kind of pattern like:
+    addTest(char *TestName)
+        .with_input(char *input)
+        .with_expected_output(expected_output)
+    etc
+
+    It makes fields optional and the framework less verbose
+*/
+// TODO Add std::string command[] to pass to the binary
 // TODO Add timeout after which we kill the process
-#define ADD_TEST(TEST_NAME, STDINPUT, EXPECTED_STDOUT, EXPECTED_EXIT_CODE)     \
+#define ADD_TEST(TEST_NAME, STDINPUT, EXPECTED_STDOUT, EXPECTED_STDERR,        \
+                 EXPECTED_EXIT_CODE)                                           \
     struct TEST_NAME                                                           \
     {                                                                          \
         static constexpr std::string_view test_name = #TEST_NAME;              \
         static constexpr std::string_view stdinput = STDINPUT;                 \
         static constexpr std::string_view expected_stdout = EXPECTED_STDOUT;   \
+        static constexpr std::string_view expected_stderr = EXPECTED_STDERR;   \
         static constexpr int expected_exit_code = EXPECTED_EXIT_CODE;          \
     };
 
@@ -107,8 +130,10 @@ struct OutputBuffer
 struct RuntimeProcess
 {
     int stdout_fd;
+    int stderr_fd;
     pid_t pid;
     OutputBuffer stdout_buff;
+    OutputBuffer stderr_buff;
 };
 
 struct StaticProcessData
@@ -116,6 +141,7 @@ struct StaticProcessData
     std::string_view test_name;
     std::string_view stdinput;
     std::string_view expected_stdout;
+    std::string_view expected_stderr;
     int expected_exit_code;
 };
 
@@ -129,7 +155,7 @@ struct FunctionalTestRunner
     // Prefill metadata for the tests in comptime, since these are available
     static constexpr std::array<StaticProcessData, NumTests> metadata = {
         { StaticProcessData{ Tests::test_name, Tests::stdinput,
-                             Tests::expected_stdout,
+                             Tests::expected_stdout, Tests::expected_stderr,
                              Tests::expected_exit_code }... }
     };
 
@@ -150,9 +176,10 @@ struct FunctionalTestRunner
         for (std::size_t i = 0; i < NumTests; ++i)
         {
             // Piping stdin and stdout (TODO stderr)
-            int stdin_pipe[2], stdout_pipe[2];
+            int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
             pipe(stdin_pipe);
             pipe(stdout_pipe);
+            pipe(stderr_pipe);
 
             // New process
             pid_t pid = fork();
@@ -161,8 +188,10 @@ struct FunctionalTestRunner
                 // Link the pipes in the child
                 dup2(stdin_pipe[0], STDIN_FILENO);
                 dup2(stdout_pipe[1], STDOUT_FILENO);
+                dup2(stdout_pipe[1], STDERR_FILENO);
                 close(stdin_pipe[1]);
                 close(stdout_pipe[0]);
+                close(stderr_pipe[0]);
                 // TODO Command arguments would go here once implemented
                 execl(BinaryPath, BinaryPath, nullptr);
                 perror("execl");
@@ -172,6 +201,7 @@ struct FunctionalTestRunner
             // In the parent, close our side of the pipe
             close(stdin_pipe[0]);
             close(stdout_pipe[1]);
+            close(stderr_pipe[1]);
             // Send the stdin data through the pipe
             write(stdin_pipe[1], metadata[i].stdinput.data(),
                   metadata[i].stdinput.size());
@@ -180,19 +210,27 @@ struct FunctionalTestRunner
 
             // Make the stdout nonblocking
             fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
+            // Make the stderr nonblocking
+            fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK);
 
             // Subscribe the process's stdout to the epoll
-            epoll_event ev{ .events = EPOLLIN,
-                            .data = { .fd = stdout_pipe[0] } };
-            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev);
+            epoll_event ev_out{ .events = EPOLLIN,
+                                .data = { .fd = stdout_pipe[0] } };
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev_out);
+
+            // Subscribe the process's stderr to the epoll
+            epoll_event ev_err{ .events = EPOLLIN,
+                                .data = { .fd = stderr_pipe[0] } };
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stderr_pipe[0], &ev_err);
 
             // Fill the runtime struct
-            processes[i] = RuntimeProcess{ stdout_pipe[0], pid, {} };
+            processes[i] =
+                RuntimeProcess{ stdout_pipe[0], stderr_pipe[0], pid, {}, {} };
         }
 
         // Let the tests run while collecting the data
         std::array<char, 1024> buffer;
-        std::size_t remaining = NumTests;
+        std::size_t remaining = NumTests * 2;
         // While tests are still running
         while (remaining > 0)
         {
@@ -224,6 +262,24 @@ struct FunctionalTestRunner
                         }
                         break;
                     }
+                    else if (processes[j].stderr_fd == fd)
+                    {
+                        // Either we collect new stderr, or the process has
+                        // finished
+                        ssize_t count = read(fd, buffer.data(), buffer.size());
+                        if (count > 0)
+                        {
+                            processes[j].stderr_buff.append(buffer.data(),
+                                                            count);
+                        }
+                        else if (count == 0)
+                        {
+                            close(fd);
+                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                            --remaining;
+                        }
+                        break;
+                    }
                 }
             }
         }
@@ -238,17 +294,23 @@ struct FunctionalTestRunner
 
             bool passed = exit_code == metadata[i].expected_exit_code
                 && processes[i].stdout_buff.view()
-                    == metadata[i].expected_stdout;
+                    == metadata[i].expected_stdout
+                && processes[i].stderr_buff.view()
+                    == metadata[i].expected_stderr;
 
             std::cout << "[" << metadata[i].test_name << "] "
                       << (passed ? "✅ PASS" : "❌ FAIL") << "\n";
 
             if (!passed)
             {
-                std::cout << "  Expected output: \""
+                std::cout << "  Expected stdout: \""
                           << metadata[i].expected_stdout << "\"\n"
-                          << "  Actual output:   \""
+                          << "  Actual stdout:   \""
                           << processes[i].stdout_buff.view() << "\"\n"
+                          << "  Expected stderr: \""
+                          << metadata[i].expected_stderr << "\"\n"
+                          << "  Actual stderr:   \""
+                          << processes[i].stderr_buff.view() << "\"\n"
                           << "  Expected exit: "
                           << metadata[i].expected_exit_code
                           << ", Actual: " << exit_code << '\n';
