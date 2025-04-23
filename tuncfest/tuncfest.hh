@@ -12,9 +12,10 @@ template <typename T>
 concept HasConstexprName = requires {
     requires std::is_constant_evaluated();
     []() static constexpr {
-        auto& name = T::name;
-        static_assert(std::is_same_v<decltype(name), std::string_view const&>,
-                      "The test does contain a name");
+        auto& test_name = T::test_name;
+        static_assert(
+            std::is_same_v<decltype(test_name), std::string_view const&>,
+            "The test does contain a test_name");
     }();
 };
 
@@ -22,19 +23,21 @@ template <typename T>
 concept HasConstexprInput = requires {
     requires std::is_constant_evaluated();
     []() static constexpr {
-        auto& input = T::input;
-        static_assert(std::is_same_v<decltype(input), std::string_view const&>,
-                      "The test does contain a stdin");
+        auto& stdinput = T::stdinput;
+        static_assert(
+            std::is_same_v<decltype(stdinput), std::string_view const&>,
+            "The test does contain a stdinput");
     }();
 };
 
 template <typename T>
-concept HasConstexprOutput = requires {
+concept HasConstexprStdout = requires {
     requires std::is_constant_evaluated();
     []() static constexpr {
-        auto& output = T::expected_output;
-        static_assert(std::is_same_v<decltype(output), std::string_view const&>,
-                      "The test does contain an expected stdout");
+        auto& expected_stdout = T::expected_stdout;
+        static_assert(
+            std::is_same_v<decltype(expected_stdout), std::string_view const&>,
+            "The test does contain an expected_stdout");
     }();
 };
 
@@ -51,36 +54,18 @@ concept HasConstexprExitCode = requires {
 
 template <typename T>
 concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
-    && HasConstexprOutput<T> && HasConstexprExitCode<T>;
-
-// TODO Is this useful ?
-template <typename T>
-concept ValidTestCase = requires {
-    []() static constexpr {
-        static_assert(HasConstexprName<T>,
-                      "TestCase is missing a valid `name` member.");
-        static_assert(HasConstexprInput<T>,
-                      "TestCase is missing a valid `input` member.");
-        static_assert(HasConstexprOutput<T>,
-                      "TestCase is missing a valid `expected_output` member.");
-        static_assert(
-            HasConstexprExitCode<T>,
-            "TestCase is missing a valid `expected_exit_code` member.");
-    }();
-};
+    && HasConstexprStdout<T> && HasConstexprExitCode<T>;
 
 // TODO Add expected std_err and std::string command[] to pass to the binary
 // TODO Add timeout after which we kill the process
-#define ADD_TEST(NAME, INPUT_STR, OUTPUT_STR, EXIT_CODE)                       \
-    struct NAME                                                                \
+#define ADD_TEST(TEST_NAME, STDINPUT, EXPECTED_STDOUT, EXPECTED_EXIT_CODE)     \
+    struct TEST_NAME                                                           \
     {                                                                          \
-        static constexpr std::string_view name = #NAME;                        \
-        static constexpr std::string_view input = INPUT_STR;                   \
-        static constexpr std::string_view expected_output = OUTPUT_STR;        \
-        static constexpr int expected_exit_code = EXIT_CODE;                   \
-    };                                                                         \
-    static_assert(ValidTestCase<NAME>,                                         \
-                  "#NAME does not fulfill the TestCase requirements");
+        static constexpr std::string_view test_name = #TEST_NAME;              \
+        static constexpr std::string_view stdinput = STDINPUT;                 \
+        static constexpr std::string_view expected_stdout = EXPECTED_STDOUT;   \
+        static constexpr int expected_exit_code = EXPECTED_EXIT_CODE;          \
+    };
 
 template <typename... Ts>
 struct parameter_pack_size;
@@ -123,15 +108,15 @@ struct RuntimeProcess
 {
     int stdout_fd;
     pid_t pid;
-    OutputBuffer output;
+    OutputBuffer stdout_buff;
 };
 
 struct StaticProcessData
 {
-    std::string_view input;
-    std::string_view expected_output;
+    std::string_view test_name;
+    std::string_view stdinput;
+    std::string_view expected_stdout;
     int expected_exit_code;
-    std::string_view name;
 };
 
 template <char const* BinaryPath, TestCase... Tests>
@@ -143,8 +128,9 @@ struct FunctionalTestRunner
 
     // Prefill metadata for the tests in comptime, since these are available
     static constexpr std::array<StaticProcessData, NumTests> metadata = {
-        { StaticProcessData{ Tests::input, Tests::expected_output,
-                             Tests::expected_exit_code, Tests::name }... }
+        { StaticProcessData{ Tests::test_name, Tests::stdinput,
+                             Tests::expected_stdout,
+                             Tests::expected_exit_code }... }
     };
 
     // Main function for the runner
@@ -187,8 +173,8 @@ struct FunctionalTestRunner
             close(stdin_pipe[0]);
             close(stdout_pipe[1]);
             // Send the stdin data through the pipe
-            write(stdin_pipe[1], metadata[i].input.data(),
-                  metadata[i].input.size());
+            write(stdin_pipe[1], metadata[i].stdinput.data(),
+                  metadata[i].stdinput.size());
             // Close the stdin pipe
             close(stdin_pipe[1]);
 
@@ -227,7 +213,8 @@ struct FunctionalTestRunner
                         ssize_t count = read(fd, buffer.data(), buffer.size());
                         if (count > 0)
                         {
-                            processes[j].output.append(buffer.data(), count);
+                            processes[j].stdout_buff.append(buffer.data(),
+                                                            count);
                         }
                         else if (count == 0)
                         {
@@ -250,17 +237,18 @@ struct FunctionalTestRunner
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
             bool passed = exit_code == metadata[i].expected_exit_code
-                && processes[i].output.view() == metadata[i].expected_output;
+                && processes[i].stdout_buff.view()
+                    == metadata[i].expected_stdout;
 
-            std::cout << "[" << metadata[i].name << "] "
+            std::cout << "[" << metadata[i].test_name << "] "
                       << (passed ? "✅ PASS" : "❌ FAIL") << "\n";
 
             if (!passed)
             {
                 std::cout << "  Expected output: \""
-                          << metadata[i].expected_output << "\"\n"
+                          << metadata[i].expected_stdout << "\"\n"
                           << "  Actual output:   \""
-                          << processes[i].output.view() << "\"\n"
+                          << processes[i].stdout_buff.view() << "\"\n"
                           << "  Expected exit: "
                           << metadata[i].expected_exit_code
                           << ", Actual: " << exit_code << '\n';
