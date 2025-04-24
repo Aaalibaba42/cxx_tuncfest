@@ -6,7 +6,8 @@ I was happy with, so I decided to make my own.
 
 There are plenty of Unit testing framework that are great, I won't try to do
 better than them, but weirdly enough, functional tests of external binaries (C++
-or otherwise) don't seem to exist in modern and simple C++. Plus, it is very easy to [integrate to your projects!](#integration).
+or otherwise) don't seem to exist in modern and simple C++. Plus, it is very
+easy to [integrate to your projects!](#integration)
 
 Objective
 ---------
@@ -29,17 +30,13 @@ and you are good to go.
 To add a Test, you first need to create a TestBuilder with the handy
 `testBuilder("TestName")` macro. It is some kind of a builder pattern, you can
 change the Test settings by chaining the following methods:
-- with_stdinput<sv("Input")>()
-- with_expected_stdout<sv("Output")>()
-- with_expected_stderr<sv("Error output")>()
+- with_stdinput<"Input">()
+- with_expected_stdout<"Output">()
+- with_expected_stderr<"Error output">()
 - with_expected_exit_code<0>()
 
-Careful: sv("string") is an internal wrapper on std::string_view, since
-string_views can't instantiate templates in c++23. They are necessary, and you
-will have nasty errors if you don't use them.
-
 You can then register a Test (basicly "realizing" the builder), with the
-`REGISTER_TEST(TestName, TestBuilderName)` macro.
+REGISTER_TEST(TestName, TestBuilderName)` macro.
 
 Partially specialized Builders should be able to be reused, but this isn't
 tested yet so I won't say it is a feature.
@@ -58,12 +55,12 @@ you want (and have registered) as variadic template parameters.
 static char const binPath[] = "/usr/bin/cat";
 
 constexpr auto FirstTestBuilder = testBuilder("FirstTest")
-                                      .with_stdinput<sv("42")>()
-                                      .with_expected_stdout<sv("42")>();
+                                      .with_stdinput<"42">()
+                                      .with_expected_stdout<"42">();
 
 constexpr auto SecondTestBuilder = testBuilder("SecondTest")
-                                       .with_stdinput<sv("43\n")>()
-                                       .with_expected_stdout<sv("43\n")>();
+                                       .with_stdinput<"43\n">()
+                                       .with_expected_stdout<"43\n">();
 
 REGISTER_TEST(FirstTest, FirstTestBuilder);
 REGISTER_TEST(SecondTest, SecondTestBuilder);

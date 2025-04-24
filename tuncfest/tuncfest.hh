@@ -158,7 +158,7 @@ constexpr auto addTest()
 #define REGISTER_TEST(NAME, BUILDER) using NAME = decltype(BUILDER)::Result
 
 #define testBuilder(TESTNAME_LITERAL)                                          \
-    TestBuilder<MakeTag<sv(TESTNAME_LITERAL)>::type>()
+    TestBuilder<MakeTag<TESTNAME_LITERAL>::type>()
 
 template <typename... Ts>
 struct parameter_pack_size;
@@ -177,6 +177,7 @@ struct parameter_pack_size<T, Ts...>
 
 // ostringstreams are notoriously heavy, this should be substancially
 // quicker
+// TODO 4096
 struct OutputBuffer
 {
     char data[4096];

@@ -5,30 +5,30 @@ static char const binPath[] = "./myheavycat";
 #define Test(n)                                                                \
     constexpr auto Test##n##Builder =                                          \
         testBuilder("Test" #n)                                                 \
-            .with_stdinput<sv(                                                 \
+            .with_stdinput<                                                    \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm")>()                                             \
-            .with_expected_stdout<sv(                                          \
+                "cplrghusetjm">()                                              \
+            .with_expected_stdout<                                             \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm")>()                                             \
-            .with_expected_stderr<sv(                                          \
+                "cplrghusetjm">()                                              \
+            .with_expected_stderr<                                             \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm")>();                                            \
+                "cplrghusetjm">();                                             \
     REGISTER_TEST(Test##n, Test##n##Builder)
 
 Test(1);
@@ -64,6 +64,31 @@ Test(32);
 Test(33);
 Test(34);
 Test(35);
+Test(36);
+Test(37);
+Test(38);
+Test(39);
+Test(40);
+Test(41);
+Test(42);
+Test(43);
+Test(44);
+Test(45);
+Test(46);
+Test(47);
+Test(48);
+Test(49);
+Test(50);
+Test(51);
+Test(52);
+Test(53);
+Test(54);
+Test(55);
+Test(56);
+Test(57);
+Test(58);
+Test(59);
+Test(60);
 
 int main(void)
 {
