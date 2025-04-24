@@ -126,7 +126,32 @@ int main(void)
         Test32,
         Test33,
         Test34,
-        Test35
+        Test35,
+        Test36,
+        Test37,
+        Test38,
+        Test39,
+        Test40,
+        Test41,
+        Test42,
+        Test43,
+        Test44,
+        Test45,
+        Test46,
+        Test47,
+        Test48,
+        Test49,
+        Test50,
+        Test51,
+        Test52,
+        Test53,
+        Test54,
+        Test55,
+        Test56,
+        Test57,
+        Test58,
+        Test59,
+        Test60
     >::run_all_tests();
     // clang-format on
 }

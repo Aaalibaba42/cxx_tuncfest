@@ -1,5 +1,8 @@
-#include <iostream>
+#include <chrono>
 #include <fstream>
+#include <iostream>
+#include <random>
+#include <thread>
 #include <vector>
 
 int main(int argc, char* argv[])
@@ -32,6 +35,13 @@ int main(int argc, char* argv[])
         stdout_vec.shrink_to_fit();
         stderr_vec.push_back(ch);
         stderr_vec.shrink_to_fit();
+
+        // I didn't want to cheat like this but I couldn't make something slow
+        // enough
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, 100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(dis(gen)));
     }
 
     for (char const& c : stdout_vec)
