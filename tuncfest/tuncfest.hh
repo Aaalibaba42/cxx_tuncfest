@@ -68,16 +68,6 @@ concept TestCase =
     HasConstexprName<T> && HasConstexprInput<T> && HasConstexprStdout<T>
     && HasConstexprStderr<T> && HasConstexprExitCode<T>;
 
-/*
-    TODO Change this macro to a builder kind of pattern like:
-    addTest(char *TestName)
-        .with_input(char *input)
-        .with_expected_output(expected_output)
-    etc
-
-    It makes fields optional and the framework less verbose
-*/
-
 // string_views are not directly usable in templates, making our own
 template <size_t N>
 struct sv
@@ -139,23 +129,28 @@ struct TestBuilder
     };
 };
 
-#define WITH_INPUT(val) .with_stdinput<sv(val)>()
-#define WITH_EXPECTED_STDOUT(val) .with_expected_stdout<sv(val)>()
-#define WITH_EXPECTED_STDERR(val) .with_expected_stderr<sv(val)>()
-#define WITH_EXPECTED_EXIT_CODE(code) .with_expected_exit_code<code>()
+template <sv Name>
+struct MakeTagImpl
+{
+    struct type
+    {
+        static constexpr sv value = Name;
+    };
+};
 
-#define ADD_TEST(TEST_NAME, BUILDER)                                           \
-    struct TEST_NAME##_Tag                                                     \
-    {                                                                          \
-        static constexpr std::string_view value = #TEST_NAME;                  \
-    };                                                                         \
-    using TEST_NAME = decltype(addTest<TEST_NAME##_Tag>() BUILDER)::Result
+template <sv Str>
+using MakeTag = MakeTagImpl<Str>;
 
 template <typename Name>
 constexpr auto addTest()
 {
     return TestBuilder<Name>{};
 }
+
+#define REGISTER_TEST(NAME, BUILDER) using NAME = decltype(BUILDER)::Result
+
+#define testBuilder(TESTNAME_LITERAL)                                          \
+    TestBuilder<MakeTag<sv(TESTNAME_LITERAL)>::type>()
 
 template <typename... Ts>
 struct parameter_pack_size;
