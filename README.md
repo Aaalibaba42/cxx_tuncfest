@@ -6,7 +6,7 @@ I was happy with, so I decided to make my own.
 
 There are plenty of Unit testing framework that are great, I won't try to do
 better than them, but weirdly enough, functional tests of external binaries (C++
-or otherwise) don't seem to exist in modern and simple C++.
+or otherwise) don't seem to exist in modern and simple C++. Plus, it is very easy to [integrate to your projects!](#integration).
 
 Objective
 ---------
@@ -74,11 +74,49 @@ int main(void)
 }
 ```
 
+Integration
+-----------
+
+It was thunk to be easy to integrate with whatever you are doing, because I
+wanted it to be easy to integrate to whatever I am doing.
+
+You only need a C++ compiler with c++23 support. No external library, no complex
+build tools, nothing. Just compile, and you have a runnable testsuite. Literally
+just a header.
+
+CMake integration was also something important since the beginning of the
+project since it is what lead me to look for a C++ functional testing framework.
+You can integrate it to your project automagically with CMake's FetchContent,
+like so:
+
+```cmake
+# Import the lib
+include(FetchContent)
+FetchContent_Declare(
+    tuncfest
+    GIT_REPOSITORY https://github.com/Aaalibaba42/cxx_tuncfest.git
+    GIT_TAG main # Or select a specific hash/tag here for stability
+)
+FetchContent_MakeAvailable(tuncfest)
+
+# Link it to your testsuite
+add_executable(functional_tests functional_tests.cc)
+target_link_libraries(functional_tests PRIVATE tuncfest)
+
+# OPTIONAL launch the testsuite directly from CMake
+add_custom_command(
+    TARGET functional_tests
+    POST_BUILD
+    COMMAND $<TARGET_FILE:functional_tests>
+)
+```
+
 Pitfalls
 --------
 
 Functional tests in parallel can be perilous, if for example the program has
-side effects that are in conflict with each others, but I'll ignore it for now.
+side effects that are in conflict with each others (or well, itself), but I'll
+ignore it for now.
 
 I think I will leave it to the user to understand that every test in a testsuite
 run in parallel. They can do several testsuites if this is not their expected
