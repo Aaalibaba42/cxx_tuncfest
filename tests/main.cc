@@ -10,7 +10,8 @@ constexpr auto FirstTestBuilder = testBuilder("FirstTest")
 constexpr auto SecondTestBuilder = testBuilder("SecondTest")
                                        .with_stdinput<sv("43\n")>()
                                        .with_expected_stdout<sv("43\n")>()
-                                       .with_expected_stderr<sv("43\n")>();
+                                       // Ooops I mispelled
+                                       .with_expected_stderr<sv("42\n")>();
 
 REGISTER_TEST(FirstTest, FirstTestBuilder);
 REGISTER_TEST(SecondTest, SecondTestBuilder);

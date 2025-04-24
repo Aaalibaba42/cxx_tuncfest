@@ -1,12 +1,20 @@
 #include <array>
 #include <cstring>
 #include <fcntl.h>
+#include <iomanip>
 #include <iostream>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <type_traits>
 #include <unistd.h>
+
+// Pretty output
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define RESET "\033[0m"
+#define BOLD "\033[1m"
 
 template <typename T>
 concept HasConstexprName = requires {
@@ -346,37 +354,63 @@ struct FunctionalTestRunner
             }
         }
 
-        // Display The Tests Results
-        // TODO More pretty and more info
         for (std::size_t i = 0; i < NumTests; ++i)
         {
             int status = 0;
             waitpid(processes[i].pid, &status, 0);
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
-            bool passed = exit_code == metadata[i].expected_exit_code
-                && processes[i].stdout_buff.view()
-                    == metadata[i].expected_stdout
-                && processes[i].stderr_buff.view()
-                    == metadata[i].expected_stderr;
+            auto const& expected_stdout = metadata[i].expected_stdout;
+            auto const& actual_stdout = processes[i].stdout_buff.view();
+            auto const& expected_stderr = metadata[i].expected_stderr;
+            auto const& actual_stderr = processes[i].stderr_buff.view();
+            int expected_exit = metadata[i].expected_exit_code;
 
-            std::cout << "[" << metadata[i].test_name << "] "
-                      << (passed ? "✅ PASS" : "❌ FAIL") << "\n";
+            bool passed = exit_code == expected_exit
+                && actual_stdout == expected_stdout
+                && actual_stderr == expected_stderr;
+
+            std::cout << BOLD << "[" << metadata[i].test_name << "] "
+                      << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
+                      << "\n";
 
             if (!passed)
             {
-                std::cout << "  Expected stdout: \""
-                          << metadata[i].expected_stdout << "\"\n"
-                          << "  Actual stdout:   \""
-                          << processes[i].stdout_buff.view() << "\"\n"
-                          << "  Expected stderr: \""
-                          << metadata[i].expected_stderr << "\"\n"
-                          << "  Actual stderr:   \""
-                          << processes[i].stderr_buff.view() << "\"\n"
-                          << "  Expected exit: "
-                          << metadata[i].expected_exit_code
-                          << ", Actual: " << exit_code << '\n';
+                auto print_diff = [](auto const& label, auto const& expected,
+                                     auto const& actual) static {
+                    std::cout << YELLOW << "  " << label << ":\n" << RESET;
+                    if (expected != actual)
+                    {
+                        std::cout << "    - Expected: " << GREEN << "\""
+                                  << expected << "\"" << RESET << "\n"
+                                  << "    + Actual:   " << RED << "\"" << actual
+                                  << "\"" << RESET << "\n";
+                    }
+                    else
+                    {
+                        std::cout << "    " << GREEN << "(match)" << RESET
+                                  << "\n";
+                    }
+                };
+
+                print_diff("Stdout", expected_stdout, actual_stdout);
+                print_diff("Stderr", expected_stderr, actual_stderr);
+
+                std::cout << YELLOW << "  Exit Code:\n" << RESET;
+                if (exit_code != expected_exit)
+                {
+                    std::cout << "    - Expected: " << GREEN << expected_exit
+                              << RESET << "\n"
+                              << "    + Actual:   " << RED << exit_code << RESET
+                              << "\n";
+                }
+                else
+                {
+                    std::cout << "    " << GREEN << "(match)" << RESET << "\n";
+                }
             }
+
+            std::cout << std::string(60, '-') << "\n";
         }
 
         // We are done (Yay \o/)
