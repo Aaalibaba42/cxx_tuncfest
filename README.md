@@ -74,6 +74,8 @@ int main(void)
 }
 ```
 
+![Compilation and launch of an example Testsuite](media/example.png)
+
 Integration
 -----------
 
