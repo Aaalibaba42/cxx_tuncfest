@@ -2,8 +2,25 @@
 
 static char const binPath[] = "./myheavycat";
 
-ADD_TEST(FirstTest, "42\n", "42\n", "42\n", 0);
-ADD_TEST(SecondTest, "43", "43", "43", 0);
+struct FirstTestTag
+{
+    static constexpr std::string_view value = "FirstTest";
+};
+using FirstTest = decltype(addTest<FirstTestTag>()
+                               .with_stdinput<sv("42")>()
+                               .with_expected_stdout<sv("42")>()
+                               .with_expected_stderr<sv("42")>()
+                               .with_expected_exit_code<0>())::Result;
+
+struct SecondTestTag
+{
+    static constexpr std::string_view value = "SecondTest";
+};
+using SecondTest = decltype(addTest<SecondTestTag>()
+                                .with_stdinput<sv("43\n")>()
+                                .with_expected_stdout<sv("43\n")>()
+                                .with_expected_stderr<sv("43\n")>()
+                                .with_expected_exit_code<0>())::Result;
 
 int main(void)
 {

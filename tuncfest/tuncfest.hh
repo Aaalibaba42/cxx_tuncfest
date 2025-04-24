@@ -77,18 +77,73 @@ concept TestCase =
 
     It makes fields optional and the framework less verbose
 */
+
+// string_views are not directly usable in templates, making our own
+template <size_t N>
+struct sv
+{
+    char value[N];
+
+    constexpr sv(char const (&str)[N])
+    {
+        for (size_t i = 0; i < N; ++i)
+            value[i] = str[i];
+    }
+
+    constexpr operator std::string_view() const
+    {
+        return std::string_view(value, N - 1);
+    }
+};
+
 // TODO Add std::string command[] to pass to the binary
 // TODO Add timeout after which we kill the process
-#define ADD_TEST(TEST_NAME, STDINPUT, EXPECTED_STDOUT, EXPECTED_STDERR,        \
-                 EXPECTED_EXIT_CODE)                                           \
-    struct TEST_NAME                                                           \
-    {                                                                          \
-        static constexpr std::string_view test_name = #TEST_NAME;              \
-        static constexpr std::string_view stdinput = STDINPUT;                 \
-        static constexpr std::string_view expected_stdout = EXPECTED_STDOUT;   \
-        static constexpr std::string_view expected_stderr = EXPECTED_STDERR;   \
-        static constexpr int expected_exit_code = EXPECTED_EXIT_CODE;          \
+template <typename Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
+          int ExitCode = 0>
+struct TestBuilder
+{
+    using name = Name;
+
+    template <sv NewInput>
+    constexpr auto with_stdinput() const
+    {
+        return TestBuilder<Name, NewInput, StdOut, StdErr, ExitCode>{};
+    }
+
+    template <sv NewOut>
+    constexpr auto with_expected_stdout() const
+    {
+        return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode>{};
+    }
+
+    template <sv NewErr>
+    constexpr auto with_expected_stderr() const
+    {
+        return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode>{};
+    }
+
+    template <int NewExit>
+    constexpr auto with_expected_exit_code() const
+    {
+        return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit>{};
+    }
+
+    // emit the actual struct
+    struct Result
+    {
+        static constexpr std::string_view test_name = Name::value;
+        static constexpr std::string_view stdinput = StdInput;
+        static constexpr std::string_view expected_stdout = StdOut;
+        static constexpr std::string_view expected_stderr = StdErr;
+        static constexpr int expected_exit_code = ExitCode;
     };
+};
+
+template <typename Name>
+constexpr auto addTest()
+{
+    return TestBuilder<Name>{};
+}
 
 template <typename... Ts>
 struct parameter_pack_size;
