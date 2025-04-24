@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     for (char const& c : stdout_vec)
         std::cout << c << std::flush;
     for (char const& c : stderr_vec)
-        std::cout << c << std::flush;
+        std::cerr << c << std::flush;
 
     stdout_vec.clear();
     stderr_vec.clear();

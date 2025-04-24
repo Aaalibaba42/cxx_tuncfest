@@ -2,435 +2,68 @@
 
 static char const binPath[] = "./myheavycat";
 
-ADD_TEST(
-    Test1,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test2,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test3,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test4,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test5,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test6,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test7,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test8,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test9,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test11,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test12,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test13,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test14,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test15,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test16,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test17,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test18,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test19,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test20,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test21,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test22,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test23,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test24,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test25,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test26,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test28,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test29,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test30,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test31,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test32,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test33,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test34,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
-ADD_TEST(
-    Test35,
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'."
-    ",cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'"
-    ".,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"
-    "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm",
-    0);
+#define Test(n)                                                                \
+    constexpr auto Test##n##Builder =                                          \
+        testBuilder("Test" #n)                                                 \
+            .with_stdinput<sv(                                                 \
+                "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
+                "cplrghusetjm'.,"                                              \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm")>()                                             \
+            .with_expected_stdout<sv(                                          \
+                "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
+                "cplrghusetjm'.,"                                              \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm")>()                                             \
+            .with_expected_stderr<sv(                                          \
+                "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
+                "cplrghusetjm'.,"                                              \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
+                "cplrghusetjm")>();                                            \
+    REGISTER_TEST(Test##n, Test##n##Builder)
+
+Test(1);
+Test(2);
+Test(3);
+Test(4);
+Test(5);
+Test(6);
+Test(7);
+Test(8);
+Test(9);
+Test(11);
+Test(12);
+Test(13);
+Test(14);
+Test(15);
+Test(16);
+Test(17);
+Test(18);
+Test(19);
+Test(20);
+Test(21);
+Test(22);
+Test(23);
+Test(24);
+Test(25);
+Test(26);
+Test(28);
+Test(29);
+Test(30);
+Test(31);
+Test(32);
+Test(33);
+Test(34);
+Test(35);
 
 int main(void)
 {

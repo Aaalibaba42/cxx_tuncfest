@@ -2,16 +2,16 @@
 
 static char const binPath[] = "/usr/bin/cat";
 
-ADD_TEST(FirstTest, "42\n", "42\n", 0);
-ADD_TEST(SecondTest, "43", "43", 0);
+constexpr auto FirstTestBuilder = testBuilder("FirstTest")
+                                      .with_stdinput<sv("42")>()
+                                      .with_expected_stdout<sv("42")>();
 
-/*
-Notepad:
+constexpr auto SecondTestBuilder = testBuilder("SecondTest")
+                                       .with_stdinput<sv("43\n")>()
+                                       .with_expected_stdout<sv("43\n")>();
 
-Having TestSuites with names, so that you could have:
-    Testsuite<TestSuiteName, binPath, TestStruct...>::run_all_tests();
-    Testsuite<TestSuiteName, binPath, TestStruct...>::run_all_tests();
-*/
+REGISTER_TEST(FirstTest, FirstTestBuilder);
+REGISTER_TEST(SecondTest, SecondTestBuilder);
 
 int main(void)
 {
