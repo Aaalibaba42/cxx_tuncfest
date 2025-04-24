@@ -188,7 +188,7 @@ struct FunctionalTestRunner
                 // Link the pipes in the child
                 dup2(stdin_pipe[0], STDIN_FILENO);
                 dup2(stdout_pipe[1], STDOUT_FILENO);
-                dup2(stdout_pipe[1], STDERR_FILENO);
+                dup2(stderr_pipe[1], STDERR_FILENO);
                 close(stdin_pipe[1]);
                 close(stdout_pipe[0]);
                 close(stderr_pipe[0]);
