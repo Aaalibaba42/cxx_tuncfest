@@ -216,6 +216,13 @@ struct StaticProcessData
     int expected_exit_code;
 };
 
+inline int get_terminal_width()
+{
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    return static_cast<int>(w.ws_col);
+}
+
 template <char const* BinaryPath, TestCase... Tests>
 struct FunctionalTestRunner
 {
@@ -302,9 +309,37 @@ struct FunctionalTestRunner
         // Let the tests run while collecting the data
         std::array<char, 1024> buffer;
         std::size_t remaining = NumTests * 2;
+        auto gradient_bar =
+            [](std::size_t total, std::size_t left,
+               std::tuple<int, int, int> start_color = { 227, 52, 0 },
+               std::tuple<int, int, int> end_color = { 92, 204, 150 }) {
+                int width = get_terminal_width();
+                int bar_width = width - 20;
+                double progress = 1.0 - static_cast<double>(left) / total;
+                int filled = static_cast<int>(bar_width * progress);
+
+                auto [r1, g1, b1] = start_color;
+                auto [r2, g2, b2] = end_color;
+
+                std::cout << "\r[";
+                for (int i = 0; i < bar_width; ++i)
+                {
+                    double ratio = static_cast<double>(i) / bar_width;
+                    int r = static_cast<int>(r1 + (r2 - r1) * ratio);
+                    int g = static_cast<int>(g1 + (g2 - g1) * ratio);
+                    int b = static_cast<int>(b1 + (b2 - b1) * ratio);
+                    std::cout << "\033[38;2;" << r << ";" << g << ";" << b
+                              << "m" << (i < filled ? "█" : "░") << "\033[0m";
+                }
+                std::cout << "] " << std::setw(3)
+                          << static_cast<int>(progress * 100) << "%"
+                          << std::flush;
+            };
+
         // While tests are still running
         while (remaining > 0)
         {
+            gradient_bar(NumTests * 2, remaining - 1);
             // Get everything that happened
             epoll_event events[MAX_EVENTS];
             int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
