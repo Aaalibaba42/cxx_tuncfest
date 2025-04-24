@@ -128,7 +128,7 @@ struct TestBuilder
         return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit>{};
     }
 
-    // emit the actual struct
+    // Emit the actual struct
     struct Result
     {
         static constexpr std::string_view test_name = Name::value;
@@ -138,6 +138,18 @@ struct TestBuilder
         static constexpr int expected_exit_code = ExitCode;
     };
 };
+
+#define WITH_INPUT(val) .with_stdinput<sv(val)>()
+#define WITH_EXPECTED_STDOUT(val) .with_expected_stdout<sv(val)>()
+#define WITH_EXPECTED_STDERR(val) .with_expected_stderr<sv(val)>()
+#define WITH_EXPECTED_EXIT_CODE(code) .with_expected_exit_code<code>()
+
+#define ADD_TEST(TEST_NAME, BUILDER)                                           \
+    struct TEST_NAME##_Tag                                                     \
+    {                                                                          \
+        static constexpr std::string_view value = #TEST_NAME;                  \
+    };                                                                         \
+    using TEST_NAME = decltype(addTest<TEST_NAME##_Tag>() BUILDER)::Result
 
 template <typename Name>
 constexpr auto addTest()

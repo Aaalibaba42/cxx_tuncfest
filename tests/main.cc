@@ -2,25 +2,19 @@
 
 static char const binPath[] = "./myheavycat";
 
-struct FirstTestTag
-{
-    static constexpr std::string_view value = "FirstTest";
-};
-using FirstTest = decltype(addTest<FirstTestTag>()
-                               .with_stdinput<sv("42")>()
-                               .with_expected_stdout<sv("42")>()
-                               .with_expected_stderr<sv("42")>()
-                               .with_expected_exit_code<0>())::Result;
+// clang-format off
+ADD_TEST(FirstTest,
+    WITH_INPUT("42")
+    WITH_EXPECTED_STDOUT("42")
+    WITH_EXPECTED_STDERR("42")
+);
 
-struct SecondTestTag
-{
-    static constexpr std::string_view value = "SecondTest";
-};
-using SecondTest = decltype(addTest<SecondTestTag>()
-                                .with_stdinput<sv("43\n")>()
-                                .with_expected_stdout<sv("43\n")>()
-                                .with_expected_stderr<sv("43\n")>()
-                                .with_expected_exit_code<0>())::Result;
+ADD_TEST(SecondTest,
+    WITH_INPUT("43\n")
+    WITH_EXPECTED_STDOUT("43\n")
+    WITH_EXPECTED_STDERR("43\n")
+);
+// clang-format on
 
 int main(void)
 {
