@@ -34,11 +34,10 @@ int main(int argc, char* argv[])
         stderr_vec.shrink_to_fit();
     }
 
-    stdout_vec.push_back(0);
-    stderr_vec.push_back(0);
-
-    std::cout << &stdout_vec[0] << std::flush;
-    std::cerr << &stderr_vec[0] << std::flush;
+    for (char const& c : stdout_vec)
+        std::cout << c << std::flush;
+    for (char const& c : stderr_vec)
+        std::cout << c << std::flush;
 
     stdout_vec.clear();
     stderr_vec.clear();
