@@ -14,6 +14,10 @@ Objective
 Basicly being able to functionally test external binaries in parallel and
 comparing stdout/stderr and the exit code with simple C++ code.
 
+As a bonus, I've leveraged most of what modern C++ can offer, so most things are
+done very efficiently at compile time. Basicly the only thing left at run time
+is to launch the pipes and subprocesses and compare the outputs.
+
 Usage
 -----
 
@@ -22,17 +26,29 @@ and you are good to go.
 
 ### Defining a Test
 
-To add a Test, just invoke the ADD_TEST macro with the following arguments:
-1. The test name
-2. the stdin to pass to the test
-3. the expected stdout
-4. the expected return code
+To add a Test, you first need to create a TestBuilder with the handy
+`testBuilder("TestName")` macro. It is some kind of a builder pattern, you can
+change the Test settings by chaining the following methods:
+- with_stdinput<sv("Input")>()
+- with_expected_stdout<sv("Output")>()
+- with_expected_stderr<sv("Error output")>()
+- with_expected_exit_code<0>()
+
+Careful: sv("string") is an internal wrapper on std::string_view, since
+string_views can't instantiate templates in c++23. They are necessary, and you
+will have nasty errors if you don't use them.
+
+You can then register a Test (basicly "realizing" the builder), with the
+`REGISTER_TEST(TestName, TestBuilderName)` macro.
+
+Partially specialized Builders should be able to be reused, but this isn't
+tested yet so I won't say it is a feature.
 
 ### Launching the tests
 
 Just create a main function, and run the FunctionalTestRunner `run_all_tests()`
 static function, passing the path of the program to test, and as many tests as
-you want as variadic template parameters.
+you want (and have registered) as variadic template parameters.
 
 ### Example
 
@@ -41,8 +57,16 @@ you want as variadic template parameters.
 
 static char const binPath[] = "/usr/bin/cat";
 
-ADD_TEST(FirstTest, "42\n", "42\n", 0);
-ADD_TEST(SecondTest, "43", "43", 0);
+constexpr auto FirstTestBuilder = testBuilder("FirstTest")
+                                      .with_stdinput<sv("42")>()
+                                      .with_expected_stdout<sv("42")>();
+
+constexpr auto SecondTestBuilder = testBuilder("SecondTest")
+                                       .with_stdinput<sv("43\n")>()
+                                       .with_expected_stdout<sv("43\n")>();
+
+REGISTER_TEST(FirstTest, FirstTestBuilder);
+REGISTER_TEST(SecondTest, SecondTestBuilder);
 
 int main(void)
 {
