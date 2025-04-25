@@ -1,5 +1,6 @@
 #include <array>
 #include <cstring>
+#include <vector>
 #include <fcntl.h>
 #include <iomanip>
 #include <iostream>
@@ -15,6 +16,26 @@
 #define YELLOW "\033[33m"
 #define RESET "\033[0m"
 #define BOLD "\033[1m"
+
+namespace VariadicTemplatedTypesCounting
+{
+    template <typename... Ts>
+    struct parameter_pack_size;
+
+    template <>
+    struct parameter_pack_size<>
+    {
+        static constexpr std::size_t value = 0;
+    };
+
+    template <typename T, typename... Ts>
+    struct parameter_pack_size<T, Ts...>
+    {
+        static constexpr std::size_t value =
+            1 + parameter_pack_size<Ts...>::value;
+    };
+} // namespace VariadicTemplatedTypesCounting
+using VariadicTemplatedTypesCounting::parameter_pack_size;
 
 namespace TestFormValidation
 {
@@ -135,7 +156,7 @@ namespace TestBuilderClass
     // TODO Add std::string command[] to pass to the binary
     // TODO Add timeout after which we kill the process
     template <typename Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
-              int ExitCode = 0>
+              int ExitCode = 0, sv... CmdLineArgs>
     struct TestBuilder
     {
         using name = Name;
@@ -164,6 +185,13 @@ namespace TestBuilderClass
             return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit>{};
         }
 
+        template <sv... NewArgs>
+        constexpr auto with_command_line() const
+        {
+            return TestBuilder<Name, StdInput, StdOut, StdErr, ExitCode,
+                               NewArgs...>{};
+        }
+
         // Emit the actual struct
         struct Result
         {
@@ -172,6 +200,11 @@ namespace TestBuilderClass
             static constexpr std::string_view expected_stdout = StdOut;
             static constexpr std::string_view expected_stderr = StdErr;
             static constexpr int expected_exit_code = ExitCode;
+
+            static constexpr std::size_t command_line_argc =
+                parameter_pack_size<decltype(CmdLineArgs)...>::value;
+            static constexpr std::array<std::string_view, command_line_argc>
+                command_line_argv = { CmdLineArgs... };
         };
     };
 
@@ -202,26 +235,6 @@ using TestBuilderClass::TestBuilder;
 using TestBuilderClass::MakeTag;
 using TestBuilderClass::addTest;
 
-namespace VariadicTemplatedTypesCounting
-{
-    template <typename... Ts>
-    struct parameter_pack_size;
-
-    template <>
-    struct parameter_pack_size<>
-    {
-        static constexpr std::size_t value = 0;
-    };
-
-    template <typename T, typename... Ts>
-    struct parameter_pack_size<T, Ts...>
-    {
-        static constexpr std::size_t value =
-            1 + parameter_pack_size<Ts...>::value;
-    };
-} // namespace VariadicTemplatedTypesCounting
-using VariadicTemplatedTypesCounting::parameter_pack_size;
-
 namespace Runner
 {
     // Not inferable in comptime
@@ -242,6 +255,9 @@ namespace Runner
         std::string_view expected_stdout;
         std::string_view expected_stderr;
         int expected_exit_code;
+
+        std::size_t command_line_argc;
+        std::string_view const* command_line_argv;
     };
 
     inline int get_terminal_width()
@@ -260,9 +276,10 @@ namespace Runner
 
         // Prefill metadata for the tests in comptime, since these are available
         static constexpr std::array<StaticProcessData, NumTests> metadata = {
-            { StaticProcessData{ Tests::test_name, Tests::stdinput,
-                                 Tests::expected_stdout, Tests::expected_stderr,
-                                 Tests::expected_exit_code }... }
+            { StaticProcessData{
+                Tests::test_name, Tests::stdinput, Tests::expected_stdout,
+                Tests::expected_stderr, Tests::expected_exit_code,
+                Tests::command_line_argc, Tests::command_line_argv.data() }... }
         };
 
         // Main function for the runner
@@ -298,9 +315,19 @@ namespace Runner
                     close(stdin_pipe[1]);
                     close(stdout_pipe[0]);
                     close(stderr_pipe[0]);
-                    // TODO Command arguments would go here once implemented
-                    execl(BinaryPath, BinaryPath, nullptr);
-                    perror("execl");
+
+                    // TODO make constexpr
+                    std::vector<char const*> argv;
+                    argv.push_back(BinaryPath);
+                    for (std::size_t j = 0; j < metadata[i].command_line_argc;
+                         ++j)
+                    {
+                        argv.push_back(metadata[i].command_line_argv[j].data());
+                    }
+                    argv.push_back(nullptr);
+                    // ODOT
+                    execv(BinaryPath, const_cast<char* const*>(argv.data()));
+                    perror("execv");
                     _exit(127);
                 }
 

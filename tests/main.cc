@@ -2,10 +2,12 @@
 
 static char const binPath[] = "./myheavycat";
 
-constexpr auto FirstTestBuilder = testBuilder("FirstTest")
-                                      .with_stdinput<"42">()
-                                      .with_expected_stdout<"42">()
-                                      .with_expected_stderr<"42">();
+constexpr auto FirstTestBuilder =
+    testBuilder("FirstTest")
+        .with_stdinput<"42">()
+        .with_expected_stdout<"42">()
+        .with_expected_stderr<"42">()
+        .with_command_line<"Wow", "much", "commands">();
 
 constexpr auto SecondTestBuilder = testBuilder("SecondTest")
                                        .with_stdinput<"43\n">()
