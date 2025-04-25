@@ -315,7 +315,7 @@ struct FunctionalTestRunner
                std::tuple<int, int, int> end_color = { 92, 204, 150 }) {
                 int width = get_terminal_width();
                 int bar_width = width - 20;
-                double progress = 1.0 - static_cast<double>(left) / total;
+                float progress = 1.f - static_cast<float>(left) / total;
                 int filled = static_cast<int>(bar_width * progress);
 
                 auto [r1, g1, b1] = start_color;
@@ -328,8 +328,11 @@ struct FunctionalTestRunner
                     int r = static_cast<int>(r1 + (r2 - r1) * ratio);
                     int g = static_cast<int>(g1 + (g2 - g1) * ratio);
                     int b = static_cast<int>(b1 + (b2 - b1) * ratio);
-                    std::cout << "\033[38;2;" << r << ";" << g << ";" << b
-                              << "m" << (i < filled ? "█" : "░") << "\033[0m";
+                    std::cout
+                        << "\033[38;2;" << r << ";" << g << ";" << b << "m"
+                        << (i < filled ? "█"
+                                       : (i < (filled * 1.15f) ? "░" : " "))
+                        << "\033[0m";
                 }
                 std::cout << "] " << std::setw(3)
                           << static_cast<int>(progress * 100) << "%"
