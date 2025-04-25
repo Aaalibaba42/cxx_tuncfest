@@ -450,6 +450,8 @@ namespace Runner
                     }
                 }
             }
+            // For the bar
+            std::cout << std::endl;
 
             for (std::size_t i = 0; i < NumTests; ++i)
             {
