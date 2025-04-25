@@ -153,7 +153,6 @@ using HackyWrappers::OutputBuffer;
 
 namespace TestBuilderClass
 {
-    // TODO Add std::string command[] to pass to the binary
     // TODO Add timeout after which we kill the process
     template <typename Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
               int ExitCode = 0, sv... CmdLineArgs>
@@ -450,9 +449,11 @@ namespace Runner
                     }
                 }
             }
-            // For the bar
+            // End the bar
+            gradient_bar(NumTests * 2, 0);
             std::cout << std::endl;
 
+            std::cout << std::string(60, '-') << "\n";
             for (std::size_t i = 0; i < NumTests; ++i)
             {
                 int status = 0;
