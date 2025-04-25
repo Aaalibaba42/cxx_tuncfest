@@ -71,7 +71,8 @@ int main(void)
 }
 ```
 
-![Compilation and launch of an example Testsuite](media/example.png)
+I've written a more involved walkthrough of a simple example
+[here](samples/simple/README.md).
 
 Integration
 -----------
@@ -109,6 +110,8 @@ add_custom_command(
     COMMAND $<TARGET_FILE:functional_tests>
 )
 ```
+
+You may see it in action [here](samples/simple).
 
 Pitfalls
 --------

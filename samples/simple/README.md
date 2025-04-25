@@ -109,5 +109,5 @@ $ ./test
 ```
 
 If you are so inclined, you may even integrate it to CMake automagically. You
-have an example of that (here)[CMakeLists.txt]. If you want to do that, I expect
+have an example of that [here](CMakeLists.txt). If you want to do that, I expect
 you know CMake enough to not require a walkthrough of this.
