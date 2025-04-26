@@ -297,7 +297,6 @@ namespace Runner
             std::array<RuntimeProcess, NumTests> processes;
             for (std::size_t i = 0; i < NumTests; ++i)
             {
-                // Piping stdin and stdout (TODO stderr)
                 int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
                 pipe(stdin_pipe);
                 pipe(stdout_pipe);
