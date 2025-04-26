@@ -28,12 +28,13 @@ and you are good to go.
 ### Defining a Test
 
 To add a Test, you first need to create a TestBuilder with the handy
-`testBuilder("TestName")` macro. It is some kind of a builder pattern, you can
-change the Test settings by chaining the following methods:
+`testBuilder("TestName")` macro. It is some kind of a fluent interface builder
+pattern, you can change the Test settings by chaining the following methods:
 - with_stdinput<"Input">()
 - with_expected_stdout<"Output">()
 - with_expected_stderr<"Error output">()
 - with_expected_exit_code<0>()
+- with_command_line<"--optionName", "-o", "output.xml">()
 
 You can then register a Test (basicly "realizing" the builder), with the
 REGISTER_TEST(TestName, TestBuilderName)` macro.
