@@ -28,5 +28,3 @@ add_custom_command(
     POST_BUILD
     COMMAND $<TARGET_FILE:main>
 )
-
-

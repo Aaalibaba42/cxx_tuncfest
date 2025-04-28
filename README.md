@@ -1,52 +1,147 @@
 Tunctional Festing
 ==================
 
+What ?
+------
+
+Tuncfest is a Functional Testing framework in modern C++. You can easiely define
+tests with custom stdin and command line arguments, and define expected stdout,
+stderr, and exit code. Everything but launching the tests and displaying the
+results is done at compile time, so the overhead is minimal, and every test in a
+Testsuite is launched in parallel.
+
+Why ?
+-----
+
 I was looking for a C++ native Functional Testing framework and found none that
 I was happy with, so I decided to make my own.
 
 There are plenty of Unit testing framework that are great, I won't try to do
-better than them, but weirdly enough, functional tests of external binaries (C++
-or otherwise) don't seem to exist in modern and simple C++. Plus, it is very
-easy to [integrate to your projects!](#integration)
-
-Objective
----------
-
-Basicly being able to functionally test external binaries in parallel and
-comparing stdout/stderr and the exit code with simple C++ code.
-
-As a bonus, I've leveraged most of what modern C++ can offer, so most things are
-done very efficiently at compile time. Basicly the only thing left at run time
-is to launch the pipes and subprocesses and compare the outputs.
+better than them, but weirdly enough, functional tests of external binaries
+(C++ or otherwise) don't seem to exist in modern and simple C++. Plus, it is
+very easy to [integrate to your projects!](#integration); in particular, easy
+integration with CMake (and especially CMake's FetchContent) was of paramount
+importance to me.
 
 Usage
 -----
 
-This is a single header library, you can just include the header "tuncfest.hh"
-and you are good to go.
+### Glossary
 
-### Defining a Test
+- A `TestBuilder` is a reusable object that is able _actualize_ Tests based on
+  how the Builder is setup at the moment of actualization.
+- A `Test` is an immutable object that has been _actualized_ from a TestBuilder
+  and that can be run by a TestRunner.
+- A `TestRunner` is the class that is able to run any number of Tests in
+  parallel on a given path to an executable program.
+- To actualize a `TestBuilder` to a `Test`, you **Register** them.
 
-To add a Test, you first need to create a TestBuilder with the handy
-`testBuilder("TestName")` macro. It is some kind of a fluent interface builder
-pattern, you can change the Test settings by chaining the following methods:
+### TestBuilder
+
+A TestBuilder is a templated class with the following template parameters:
+
+1. Test name: String (Default = "")
+2. Stdin passed to the program: String (Default = "")
+3. Expected standard output: String (Default = "")
+4. Expected standard error: String (Default = "")
+5. Expected exit code: Integer (Default = 0)
+6. Variadic command line arguments: String...
+
+The TestBuilder has a compile time template fluent interface builder pattern
+that let you change any of these individually. The method to change the
+parameters individually are:
+
+- with_name<"TestName">()
 - with_stdinput<"Input">()
 - with_expected_stdout<"Output">()
 - with_expected_stderr<"Error output">()
 - with_expected_exit_code<0>()
 - with_command_line<"--optionName", "-o", "output.xml">()
 
-You can then register a Test (basicly "realizing" the builder), with the
-REGISTER_TEST(TestName, TestBuilderName)` macro.
+Thus, the *advised* way of declaring a Builder is:
 
-Partially specialized Builders should be able to be reused, but this isn't
-tested yet so I won't say it is a feature.
+```cpp
+constexpr auto test_builder_1 = TestBuilder<"FirstTest">()
+                                  .with_expected_stdout<"test\n">()
+                                  .with_command_line<"test">();
+// Or to be even more explicit
+constexpr auto test_builder_2 = TestBuilder<>()
+                                  .with_name<"SecondTest">()
+                                  .with_command_line<"much", "arguments">()
+                                  .with_expected_stdout<"much arguments\n">();
+```
 
-### Launching the tests
+As you may notice, the order of the setter methods is free. You can also
+factorize test attributes:
 
-Just create a main function, and run the FunctionalTestRunner `run_all_tests()`
-static function, passing the path of the program to test, and as many tests as
-you want (and have registered) as variadic template parameters.
+```cpp
+// Maybe a better example would be pre-setting the command line argument and
+// exit code corresponding to a feature you want a test but whatever, the
+// point is to show that you are free to do stuff like this.
+
+constexpr auto default_sucess = TestBuilder<>()
+                                    .with_exit_code<0>()
+                                    .with_expected_stderr<"">();
+constexpr auto default_failure = TestBuilder<>()
+                                     .with_exit_code<1>()
+                                     .with_expected_stderr<"Failed\n">();
+
+// "Inherit" the default_sucess parameters
+constexpr auto success_test1 = default_sucess
+                                   .with_name<"Newline">()
+                                   .with_expected_stdout<"38\n">();
+constexpr auto success_test2 = default_sucess
+                                   .with_name<"NoNewline">()
+                                   .with_command_line<"--no_newline">()
+                                   .with_expected_stdout<"38">();
+
+// "Inherits" the default_failure parameters
+constexpr auto failing_test1 = default_failure
+                                   .with_name<"UnrecognizedOption">()
+                                   .with_command_line<"--doesnt_exist">();
+```
+
+NOTE: You can base a new TestBuilder from an existing one, but you **cannot**
+use copy assignment operators between TestBuilders for 2 reasons:
+- We aim for a constexpr context, and the copy assignment operator ought to be
+  on a mutable *this*,
+- TestBuilder methods actually creates a new type every time, since the tests
+  are embedded in the template parameters of the class, so assigning a new
+  TestBuilder to an existing variable would be changing its type, which is a
+  big no-no.
+
+### Registering a Test
+
+You have a handy macro `REGISTER_TEST(TestName, Builder)` that will do
+everything for you. The `TestName` here is the symbol corresponding to the Test,
+how the test will be displayed by the testsuite is still the one parametrized
+in the builder. Registering a Test has no influence on the builder, or the other
+tests that were registered by the builder.
+
+```cpp
+constexpr auto test_builder1 = TestBuilder<>()./* with stuff */();
+REGISTER_TEST(FirstTest, test_builder1);
+
+constexpr auto test_builder2 = test_builder1./* with stuff */();
+REGISTER_TEST(SecondTest, test_builder2);
+```
+
+Careful: The `TestName` is a typename, not an object.
+
+### Launching a Testsuite
+
+Once you have created the Tests you wanted, you can run them in parallel in
+a TestRunner by using the `run_all_tests` static method of the specialized
+TestRunner containing a path to an executable and a variadic number of Tests
+to run:
+
+```cpp
+int main(void)
+{
+    constexpr char const binPath[] = "/usr/bin/echo";
+    TestRunner<binPath, FirstTest, SecondTest>::run_all_tests();
+}
+```
 
 ### Example
 
@@ -72,18 +167,15 @@ int main(void)
 }
 ```
 
-I've written a more involved walkthrough of a simple example
-[here](samples/simple/README.md).
+You can find lots more examples in the [sample section.](samples)
 
 Integration
 -----------
 
-It was thunk to be easy to integrate with whatever you are doing, because I
-wanted it to be easy to integrate to whatever I am doing.
-
-You only need a C++ compiler with c++23 support. No external library, no complex
-build tools, nothing. Just compile, and you have a runnable testsuite. Literally
-just a header.
+It was thunk to be easy to integrate with whatever you are doing. You only
+need a C++ compiler with c++23 support. No external library, no complex build
+tools, nothing. Just compile, and you have a runnable testsuite. Literally just
+a header.
 
 CMake integration was also something important since the beginning of the
 project since it is what lead me to look for a C++ functional testing framework.
@@ -110,9 +202,11 @@ add_custom_command(
     POST_BUILD
     COMMAND $<TARGET_FILE:functional_tests>
 )
+# If you do, you may want to explicitely add the dependancy
+add_dependencies(functional_tests your_target)
 ```
 
-You may see it in action [here](samples/simple).
+You may see it in action [here](samples/simple/CMakeLists.txt).
 
 Pitfalls
 --------
