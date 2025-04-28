@@ -153,6 +153,18 @@ using HackyWrappers::OutputBuffer;
 
 namespace TestBuilderClass
 {
+    // I'm questioning the utility of this... In the end having this a type is
+    // no longer something interesting, since it's the nested result class that
+    // is the final Test Class.
+    template <sv Name>
+    struct MakeTag
+    {
+        struct type
+        {
+            static constexpr sv value = Name;
+        };
+    };
+
     // TODO Add timeout after which we kill the process
     template <typename Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
               int ExitCode = 0, sv... CmdLineArgs>
@@ -163,8 +175,8 @@ namespace TestBuilderClass
         template <sv NewName>
         constexpr auto with_name() const
         {
-            return TestBuilder<Name, StdInput, StdOut, StdErr, ExitCode,
-                               CmdLineArgs...>{};
+            return TestBuilder<typename MakeTag<NewName>::type, StdInput,
+                               StdOut, StdErr, ExitCode, CmdLineArgs...>{};
         }
 
         template <sv NewInput>
@@ -217,18 +229,6 @@ namespace TestBuilderClass
                 command_line_argv = { CmdLineArgs.value... };
         };
     };
-
-    template <sv Name>
-    struct MakeTagImpl
-    {
-        struct type
-        {
-            static constexpr sv value = Name;
-        };
-    };
-
-    template <sv Str>
-    using MakeTag = MakeTagImpl<Str>;
 
     template <typename Name>
     constexpr auto addTest()
