@@ -4,7 +4,8 @@ static char const binPath[] = "./myheavycat";
 
 #define Test(n)                                                                \
     constexpr auto Test##n##Builder =                                          \
-        testBuilder("Test" #n)                                                 \
+        TestBuilder<>()                                                        \
+            .with_name<"Test" #n>()                                            \
             .with_stdinput<                                                    \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
@@ -93,7 +94,7 @@ Test(60);
 int main(void)
 {
     // clang-format off
-    FunctionalTestRunner<binPath,
+    TestRunner<binPath,
         Test1,
         Test2,
         Test3,
