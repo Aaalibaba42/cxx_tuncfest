@@ -93,6 +93,8 @@ namespace TestFormValidation
         }();
     };
 
+    // TODO command line arguments
+
     template <typename T>
     concept TestCase =
         HasConstexprName<T> && HasConstexprInput<T> && HasConstexprStdout<T>
@@ -153,7 +155,10 @@ using HackyWrappers::OutputBuffer;
 namespace TestBuilderClass
 {
     // TODO Add timeout after which we kill the process
-    template <sv Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
+    // TODO Add callable validator for stdout/stderr/exit_code *instead* of
+    //      "literal" comparison (maybe when implementing, convert literal
+    //      comparison to lambda callable that compares to the lit)
+    template <sv Name = "", sv StdInput = "", sv StdOut = "", sv StdErr = "",
               int ExitCode = 0, sv... CmdLineArgs>
     struct TestBuilder
     {

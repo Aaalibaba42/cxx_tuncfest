@@ -8,7 +8,7 @@ constexpr auto tb = TestBuilder<"FirstTest">()
 
 REGISTER_TEST(FirstTest, tb);
 
-constexpr auto tb2 = tb.with_name<"SecondTest">()
+constexpr auto tb2 = TestBuilder<"SecondTest">()
                          .with_command_line<"multiple", "arguments">()
                          .with_expected_stdout<"multiple arguments\n">();
 
