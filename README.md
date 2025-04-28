@@ -232,6 +232,14 @@ user	0m1.786s
 sys	0m0.161s
 ```
 
+Looks
+-----
+
+Looks was not paramount to me, but I still made an effort to make the output as
+pretty as I can manage:
+
+https://github.com/user-attachments/assets/960b2a86-9515-4325-af1e-127f99e9b6d4
+
 Pitfalls
 --------
 
