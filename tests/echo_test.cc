@@ -2,19 +2,19 @@
 
 static char const binPath[] = "/usr/bin/echo";
 
-constexpr auto FirstTestBuilder = testBuilder("FirstTest")
-                                      .with_expected_stdout<"test\n">()
-                                      .with_command_line<"test">();
+constexpr auto tb = TestBuilder<"FirstTest">()
+                        .with_expected_stdout<"test\n">()
+                        .with_command_line<"test">();
 
-constexpr auto SecondTestBuilder =
-    testBuilder("SecondTest")
-        .with_expected_stdout<"multiple arguments\n">()
-        .with_command_line<"multiple", "arguments", "again">();
+REGISTER_TEST(FirstTest, tb);
 
-REGISTER_TEST(FirstTest, FirstTestBuilder);
-REGISTER_TEST(SecondTest, SecondTestBuilder);
+constexpr auto tb2 = tb.with_name<"SecondTest">()
+                         .with_command_line<"multiple", "arguments">()
+                         .with_expected_stdout<"multiple arguments\n">();
+
+REGISTER_TEST(SecondTest, tb2);
 
 int main(void)
 {
-    FunctionalTestRunner<binPath, FirstTest, SecondTest>::run_all_tests();
+    TestRunner<binPath, FirstTest, SecondTest>::run_all_tests();
 }

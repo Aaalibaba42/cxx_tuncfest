@@ -1,6 +1,5 @@
 #include <array>
 #include <cstring>
-#include <vector>
 #include <fcntl.h>
 #include <iomanip>
 #include <iostream>
@@ -42,7 +41,7 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprName = requires {
         requires std::is_constant_evaluated();
-        []() static constexpr {
+        []() static consteval {
             auto& test_name = T::test_name;
             static_assert(
                 std::is_same_v<decltype(test_name), std::string_view const&>,
@@ -53,7 +52,7 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprInput = requires {
         requires std::is_constant_evaluated();
-        []() static constexpr {
+        []() static consteval {
             auto& stdinput = T::stdinput;
             static_assert(
                 std::is_same_v<decltype(stdinput), std::string_view const&>,
@@ -64,7 +63,7 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprStdout = requires {
         requires std::is_constant_evaluated();
-        []() static constexpr {
+        []() static consteval {
             auto& expected_stdout = T::expected_stdout;
             static_assert(std::is_same_v<decltype(expected_stdout),
                                          std::string_view const&>,
@@ -75,7 +74,7 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprStderr = requires {
         requires std::is_constant_evaluated();
-        []() static constexpr {
+        []() static consteval {
             auto& expected_stderr = T::expected_stderr;
             static_assert(std::is_same_v<decltype(expected_stderr),
                                          std::string_view const&>,
@@ -86,7 +85,7 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprExitCode = requires {
         requires std::is_constant_evaluated();
-        []() static constexpr {
+        []() static consteval {
             static_assert(
                 std::is_same_v<
                     std::remove_cvref_t<decltype(T::expected_exit_code)>, int>,
@@ -110,13 +109,13 @@ namespace HackyWrappers
     {
         char value[N];
 
-        constexpr sv(char const (&str)[N])
+        consteval sv(char const (&str)[N])
         {
             for (size_t i = 0; i < N; ++i)
                 value[i] = str[i];
         }
 
-        constexpr operator std::string_view() const
+        consteval operator std::string_view() const
         {
             return std::string_view(value, N - 1);
         }
@@ -153,62 +152,48 @@ using HackyWrappers::OutputBuffer;
 
 namespace TestBuilderClass
 {
-    // I'm questioning the utility of this... In the end having this a type is
-    // no longer something interesting, since it's the nested result class that
-    // is the final Test Class.
-    template <sv Name>
-    struct MakeTag
-    {
-        struct type
-        {
-            static constexpr sv value = Name;
-        };
-    };
-
     // TODO Add timeout after which we kill the process
-    template <typename Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
+    template <sv Name, sv StdInput = "", sv StdOut = "", sv StdErr = "",
               int ExitCode = 0, sv... CmdLineArgs>
     struct TestBuilder
     {
-        using name = Name;
-
         template <sv NewName>
-        constexpr auto with_name() const
+        consteval auto with_name() const
         {
-            return TestBuilder<typename MakeTag<NewName>::type, StdInput,
-                               StdOut, StdErr, ExitCode, CmdLineArgs...>{};
+            return TestBuilder<NewName, StdInput, StdOut, StdErr, ExitCode,
+                               CmdLineArgs...>{};
         }
 
         template <sv NewInput>
-        constexpr auto with_stdinput() const
+        consteval auto with_stdinput() const
         {
             return TestBuilder<Name, NewInput, StdOut, StdErr, ExitCode,
                                CmdLineArgs...>{};
         }
 
         template <sv NewOut>
-        constexpr auto with_expected_stdout() const
+        consteval auto with_expected_stdout() const
         {
             return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode,
                                CmdLineArgs...>{};
         }
 
         template <sv NewErr>
-        constexpr auto with_expected_stderr() const
+        consteval auto with_expected_stderr() const
         {
             return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode,
                                CmdLineArgs...>{};
         }
 
         template <int NewExit>
-        constexpr auto with_expected_exit_code() const
+        consteval auto with_expected_exit_code() const
         {
             return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit,
                                CmdLineArgs...>{};
         }
 
         template <sv... NewArgs>
-        constexpr auto with_command_line() const
+        consteval auto with_command_line() const
         {
             return TestBuilder<Name, StdInput, StdOut, StdErr, ExitCode,
                                NewArgs...>{};
@@ -217,7 +202,7 @@ namespace TestBuilderClass
         // Emit the actual struct
         struct Result
         {
-            static constexpr std::string_view test_name = Name::value;
+            static constexpr std::string_view test_name = Name;
             static constexpr std::string_view stdinput = StdInput;
             static constexpr std::string_view expected_stdout = StdOut;
             static constexpr std::string_view expected_stderr = StdErr;
@@ -230,20 +215,9 @@ namespace TestBuilderClass
         };
     };
 
-    template <typename Name>
-    constexpr auto addTest()
-    {
-        return TestBuilder<Name>{};
-    }
-
 #define REGISTER_TEST(NAME, BUILDER) using NAME = decltype(BUILDER)::Result
-
-#define testBuilder(TESTNAME_LITERAL)                                          \
-    TestBuilder<MakeTag<TESTNAME_LITERAL>::type>()
 } // namespace TestBuilderClass
 using TestBuilderClass::TestBuilder;
-using TestBuilderClass::MakeTag;
-using TestBuilderClass::addTest;
 
 namespace Runner
 {
@@ -261,7 +235,7 @@ namespace Runner
     struct ArgvBuilder
     {
         static constexpr std::array<char const*, Test::command_line_argc + 2>
-            value = []() static constexpr {
+            value = []() static consteval {
                 std::array<char const*, Test::command_line_argc + 2> r{};
 
                 r[0] = BinPath;
@@ -296,7 +270,7 @@ namespace Runner
     }
 
     template <char const* BinaryPath, TestCase... Tests>
-    struct FunctionalTestRunner
+    struct TestRunner
     {
         // Number of tests passed to this template instantiation
         static constexpr std::size_t NumTests =
@@ -541,4 +515,4 @@ namespace Runner
         }
     };
 } // namespace Runner
-using Runner::FunctionalTestRunner;
+using Runner::TestRunner;
