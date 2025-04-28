@@ -160,28 +160,39 @@ namespace TestBuilderClass
     {
         using name = Name;
 
+        template <sv NewName>
+        constexpr auto with_name() const
+        {
+            return TestBuilder<Name, StdInput, StdOut, StdErr, ExitCode,
+                               CmdLineArgs...>{};
+        }
+
         template <sv NewInput>
         constexpr auto with_stdinput() const
         {
-            return TestBuilder<Name, NewInput, StdOut, StdErr, ExitCode>{};
+            return TestBuilder<Name, NewInput, StdOut, StdErr, ExitCode,
+                               CmdLineArgs...>{};
         }
 
         template <sv NewOut>
         constexpr auto with_expected_stdout() const
         {
-            return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode>{};
+            return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode,
+                               CmdLineArgs...>{};
         }
 
         template <sv NewErr>
         constexpr auto with_expected_stderr() const
         {
-            return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode>{};
+            return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode,
+                               CmdLineArgs...>{};
         }
 
         template <int NewExit>
         constexpr auto with_expected_exit_code() const
         {
-            return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit>{};
+            return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit,
+                               CmdLineArgs...>{};
         }
 
         template <sv... NewArgs>
