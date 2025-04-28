@@ -202,8 +202,8 @@ namespace TestBuilderClass
 
             static constexpr std::size_t command_line_argc =
                 parameter_pack_size<decltype(CmdLineArgs)...>::value;
-            static constexpr std::array<std::string_view, command_line_argc>
-                command_line_argv = { CmdLineArgs... };
+            static constexpr std::array<char const*, command_line_argc>
+                command_line_argv = { CmdLineArgs.value... };
         };
     };
 
@@ -246,6 +246,24 @@ namespace Runner
         OutputBuffer stderr_buff;
     };
 
+    template <char const* BinPath, TestCase Test>
+    struct ArgvBuilder
+    {
+        static constexpr std::array<char const*, Test::command_line_argc + 2>
+            value = []() static constexpr {
+                std::array<char const*, Test::command_line_argc + 2> r{};
+
+                r[0] = BinPath;
+                for (size_t i = 0; i < Test::command_line_argc; ++i)
+                {
+                    r[i + 1] = Test::command_line_argv[i];
+                }
+                r[r.size() - 1] = nullptr;
+
+                return r;
+            }();
+    };
+
     // Should be all filled at comptime
     struct StaticProcessData
     {
@@ -256,7 +274,7 @@ namespace Runner
         int expected_exit_code;
 
         std::size_t command_line_argc;
-        std::string_view const* command_line_argv;
+        char const* const* command_line_argv;
     };
 
     inline int get_terminal_width()
@@ -278,7 +296,8 @@ namespace Runner
             { StaticProcessData{
                 Tests::test_name, Tests::stdinput, Tests::expected_stdout,
                 Tests::expected_stderr, Tests::expected_exit_code,
-                Tests::command_line_argc, Tests::command_line_argv.data() }... }
+                Tests::command_line_argc,
+                ArgvBuilder<BinaryPath, Tests>::value.data() }... }
         };
 
         // Main function for the runner
@@ -314,17 +333,9 @@ namespace Runner
                     close(stdout_pipe[0]);
                     close(stderr_pipe[0]);
 
-                    // TODO make constexpr
-                    std::vector<char const*> argv;
-                    argv.push_back(BinaryPath);
-                    for (std::size_t j = 0; j < metadata[i].command_line_argc;
-                         ++j)
-                    {
-                        argv.push_back(metadata[i].command_line_argv[j].data());
-                    }
-                    argv.push_back(nullptr);
-                    // ODOT
-                    execv(BinaryPath, const_cast<char* const*>(argv.data()));
+                    execv(BinaryPath,
+                          const_cast<char* const*>(
+                              metadata[i].command_line_argv));
                     perror("execv");
                     _exit(127);
                 }
