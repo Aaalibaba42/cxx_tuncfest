@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
         // enough
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, 100);
+        std::uniform_int_distribution<> dis(0, 10);
         std::this_thread::sleep_for(std::chrono::milliseconds(dis(gen)));
     }
 
