@@ -19,7 +19,7 @@ I was happy with, so I decided to make my own.
 There are plenty of Unit testing framework that are great, I won't try to do
 better than them, but weirdly enough, functional tests of external binaries
 (C++ or otherwise) don't seem to exist in modern and simple C++. Plus, it is
-very easy to [integrate to your projects!](#integration); in particular, easy
+very easy to [integrate to your projects!](#integration) In particular, easy
 integration with CMake (and especially CMake's FetchContent) was of paramount
 importance to me.
 
@@ -207,6 +207,30 @@ add_dependencies(functional_tests your_target)
 ```
 
 You may see it in action [here](samples/simple/CMakeLists.txt).
+
+Performance
+-----------
+
+Since almost everything is done at compile time, the runtime overhead should
+be negligeable. At runtime, almost nothing happens before starting to fork and
+pipe to run the tests in parallel. I/O is synchronized with the kernel's epoll,
+so runtime performance should also be excellent. Compilation time is *very*
+reasonable considering everything that is happening. The compilation time of the
+[heavy sample](samples/heavy/), which contains 60 different tests, takes about 2
+seconds on boths clang and gcc on my laptop:
+
+```
+42sh$ time g++ -std=c++23 heavy.cc -I../../tuncfest/
+
+real	0m2.182s
+user	0m2.027s
+sys	0m0.115s
+42sh$ time clang++ -std=c++23 heavy.cc -I../../tuncfest/
+
+real	0m1.995s
+user	0m1.786s
+sys	0m0.161s
+```
 
 Pitfalls
 --------
