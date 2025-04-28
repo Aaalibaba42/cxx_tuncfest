@@ -240,6 +240,10 @@ pretty as I can manage:
 
 https://github.com/user-attachments/assets/960b2a86-9515-4325-af1e-127f99e9b6d4
 
+Note: the time to compile is way quicker than I said above because the cache was
+hot since I had compiled this just before (when cache was very very hot, I got
+under 1s with this example).
+
 Pitfalls
 --------
 
