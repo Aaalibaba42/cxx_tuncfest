@@ -143,18 +143,18 @@ int main(void)
 }
 ```
 
-### Example
+### Full Example
 
 ```cpp
 #include "tuncfest.hh"
 
 static char const binPath[] = "/usr/bin/cat";
 
-constexpr auto FirstTestBuilder = testBuilder("FirstTest")
+constexpr auto FirstTestBuilder = TestBuilder<"FirstTest">()
                                       .with_stdinput<"42">()
                                       .with_expected_stdout<"42">();
 
-constexpr auto SecondTestBuilder = testBuilder("SecondTest")
+constexpr auto SecondTestBuilder = TestBuilder<"SecondTest">()
                                        .with_stdinput<"43\n">()
                                        .with_expected_stdout<"43\n">();
 
