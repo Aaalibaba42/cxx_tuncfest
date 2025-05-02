@@ -9,13 +9,6 @@
 #include <type_traits>
 #include <unistd.h>
 
-// Pretty output
-#define RED "\033[31m"
-#define GREEN "\033[32m"
-#define YELLOW "\033[33m"
-#define RESET "\033[0m"
-#define BOLD "\033[1m"
-
 namespace VariadicTemplatedTypesCounting
 {
     template <typename... Ts>
@@ -93,12 +86,27 @@ namespace TestFormValidation
         }();
     };
 
-    // TODO command line arguments
+    template <typename T>
+    concept HasConstexprCommandLineArgs = requires {
+        std::is_constant_evaluated();
+        []() static consteval {
+            auto& argc = T::command_line_argc;
+            auto& argv = T::command_line_argv;
+
+            static_assert(
+                std::is_integral_v<std::remove_cvref_t<decltype(argc)>>,
+                "The test does not contain an expected command_line_argc");
+            static_assert(
+                std::is_same_v<std::remove_cvref_t<decltype(argv)>,
+                               std::array<char const*, argc>>,
+                "The test does not contain the expected command_line_argv");
+        }();
+    };
 
     template <typename T>
-    concept TestCase =
-        HasConstexprName<T> && HasConstexprInput<T> && HasConstexprStdout<T>
-        && HasConstexprStderr<T> && HasConstexprExitCode<T>;
+    concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
+        && HasConstexprStdout<T> && HasConstexprStderr<T>
+        && HasConstexprExitCode<T> && HasConstexprCommandLineArgs<T>;
 } // namespace TestFormValidation
 // Concept that verifies something adheres to the prototype of a test.
 using TestFormValidation::TestCase;
@@ -214,7 +222,7 @@ namespace TestBuilderClass
             static constexpr int expected_exit_code = ExitCode;
 
             static constexpr std::size_t command_line_argc =
-                parameter_pack_size<decltype(CmdLineArgs)...>::value;
+                sizeof...(CmdLineArgs);
             static constexpr std::array<char const*, command_line_argc>
                 command_line_argv = { CmdLineArgs.value... };
         };
@@ -226,6 +234,54 @@ using TestBuilderClass::TestBuilder;
 
 namespace Runner
 {
+
+    namespace Output
+    {
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define RESET "\033[0m"
+#define BOLD "\033[1m"
+
+        inline int get_terminal_width()
+        {
+            struct winsize w;
+            ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+            return static_cast<int>(w.ws_col);
+        }
+
+        static void
+        gradient_bar(std::size_t total, std::size_t left,
+                     std::tuple<int, int, int> start_color = { 227, 52, 0 },
+                     std::tuple<int, int, int> end_color = { 92, 204, 150 })
+        {
+            int width = get_terminal_width();
+            int bar_width = width - 20;
+            float progress = 1.f - static_cast<float>(left) / total;
+            int filled = static_cast<int>(bar_width * progress);
+
+            auto [r1, g1, b1] = start_color;
+            auto [r2, g2, b2] = end_color;
+
+            std::cout << "\r[";
+            for (int i = 0; i < bar_width; ++i)
+            {
+                double ratio = static_cast<double>(i) / bar_width;
+                int r = static_cast<int>(r1 + (r2 - r1) * ratio);
+                int g = static_cast<int>(g1 + (g2 - g1) * ratio);
+                int b = static_cast<int>(b1 + (b2 - b1) * ratio);
+                std::cout << "\033[38;2;" << r << ";" << g << ";" << b << "m"
+                          << (i < filled ? "█"
+                                         : (i < (filled * 1.15f) ? "░" : " "))
+                          << "\033[0m";
+            }
+            std::cout << "] " << std::setw(3)
+                      << static_cast<int>(progress * 100) << "%" << std::flush;
+        };
+    } // namespace Output
+    using Output::get_terminal_width;
+    using Output::gradient_bar;
+
     // Not inferable in comptime
     struct RuntimeProcess
     {
@@ -267,16 +323,10 @@ namespace Runner
         char const* const* command_line_argv;
     };
 
-    inline int get_terminal_width()
-    {
-        struct winsize w;
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-        return static_cast<int>(w.ws_col);
-    }
-
     template <char const* BinaryPath, TestCase... Tests>
-    struct TestRunner
+    class TestRunner
     {
+    private:
         // Number of tests passed to this template instantiation
         static constexpr std::size_t NumTests =
             parameter_pack_size<Tests...>::value;
@@ -290,6 +340,50 @@ namespace Runner
                 ArgvBuilder<BinaryPath, Tests>::value.data() }... }
         };
 
+        // Function to set up pipes and fork a new process
+        static void setup_process(int stdin_pipe[2], int stdout_pipe[2],
+                                  int stderr_pipe[2], pid_t& pid, int i)
+        {
+            pipe(stdin_pipe);
+            pipe(stdout_pipe);
+            pipe(stderr_pipe);
+
+            pid = fork();
+
+            // New process
+            if (pid == 0)
+            {
+                // Link the pipes in the child
+                dup2(stdin_pipe[0], STDIN_FILENO);
+                dup2(stdout_pipe[1], STDOUT_FILENO);
+                dup2(stderr_pipe[1], STDERR_FILENO);
+                close(stdin_pipe[1]);
+                close(stdout_pipe[0]);
+                close(stderr_pipe[0]);
+
+                execv(BinaryPath,
+                      const_cast<char* const*>(metadata[i].command_line_argv));
+                perror("execv");
+                _exit(127);
+            }
+
+            // In the parent, close our side of the pipe
+            close(stdin_pipe[0]);
+            close(stdout_pipe[1]);
+            close(stderr_pipe[1]);
+            // Send the stdin data through the pipe
+            write(stdin_pipe[1], metadata[i].stdinput.data(),
+                  metadata[i].stdinput.size());
+            // Close the stdin pipe
+            close(stdin_pipe[1]);
+
+            // Make the stdout nonblocking
+            fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
+            // Make the stderr nonblocking
+            fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK);
+        }
+
+    public:
         // Main function for the runner
         static void run_all_tests()
         {
@@ -307,43 +401,9 @@ namespace Runner
             for (std::size_t i = 0; i < NumTests; ++i)
             {
                 int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
-                pipe(stdin_pipe);
-                pipe(stdout_pipe);
-                pipe(stderr_pipe);
+                pid_t pid;
 
-                // New process
-                pid_t pid = fork();
-                if (pid == 0)
-                {
-                    // Link the pipes in the child
-                    dup2(stdin_pipe[0], STDIN_FILENO);
-                    dup2(stdout_pipe[1], STDOUT_FILENO);
-                    dup2(stderr_pipe[1], STDERR_FILENO);
-                    close(stdin_pipe[1]);
-                    close(stdout_pipe[0]);
-                    close(stderr_pipe[0]);
-
-                    execv(BinaryPath,
-                          const_cast<char* const*>(
-                              metadata[i].command_line_argv));
-                    perror("execv");
-                    _exit(127);
-                }
-
-                // In the parent, close our side of the pipe
-                close(stdin_pipe[0]);
-                close(stdout_pipe[1]);
-                close(stderr_pipe[1]);
-                // Send the stdin data through the pipe
-                write(stdin_pipe[1], metadata[i].stdinput.data(),
-                      metadata[i].stdinput.size());
-                // Close the stdin pipe
-                close(stdin_pipe[1]);
-
-                // Make the stdout nonblocking
-                fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
-                // Make the stderr nonblocking
-                fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK);
+                setup_process(stdin_pipe, stdout_pipe, stderr_pipe, pid, i);
 
                 // Subscribe the process's stdout to the epoll
                 epoll_event ev_out{ .events = EPOLLIN,
@@ -364,35 +424,6 @@ namespace Runner
             // Let the tests run while collecting the data
             std::array<char, 1024> buffer;
             std::size_t remaining = NumTests * 2;
-            auto gradient_bar =
-                [](std::size_t total, std::size_t left,
-                   std::tuple<int, int, int> start_color = { 227, 52, 0 },
-                   std::tuple<int, int, int> end_color = { 92, 204, 150 }) {
-                    int width = get_terminal_width();
-                    int bar_width = width - 20;
-                    float progress = 1.f - static_cast<float>(left) / total;
-                    int filled = static_cast<int>(bar_width * progress);
-
-                    auto [r1, g1, b1] = start_color;
-                    auto [r2, g2, b2] = end_color;
-
-                    std::cout << "\r[";
-                    for (int i = 0; i < bar_width; ++i)
-                    {
-                        double ratio = static_cast<double>(i) / bar_width;
-                        int r = static_cast<int>(r1 + (r2 - r1) * ratio);
-                        int g = static_cast<int>(g1 + (g2 - g1) * ratio);
-                        int b = static_cast<int>(b1 + (b2 - b1) * ratio);
-                        std::cout
-                            << "\033[38;2;" << r << ";" << g << ";" << b << "m"
-                            << (i < filled ? "█"
-                                           : (i < (filled * 1.15f) ? "░" : " "))
-                            << "\033[0m";
-                    }
-                    std::cout << "] " << std::setw(3)
-                              << static_cast<int>(progress * 100) << "%"
-                              << std::flush;
-                };
 
             // While tests are still running
             while (remaining > 0)
@@ -453,6 +484,7 @@ namespace Runner
             gradient_bar(NumTests * 2, 0);
             std::cout << std::endl;
 
+            // TODO refactor this out
             std::cout << std::string(60, '-') << "\n";
             for (std::size_t i = 0; i < NumTests; ++i)
             {
