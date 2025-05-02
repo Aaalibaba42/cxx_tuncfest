@@ -34,12 +34,12 @@ int main(void)
 Then we define a tests Builder. Let's examine one:
 
 ```cpp
-constexpr auto greatTestBuilder = testBuilder("GreatTest")
+constexpr auto greatTestBuilder = TestBuilder<>()
+                                      .with_name<"GreatTest">()
                                       .with_stdinput<"42\n">()
                                       .with_expected_stdout<"42\n">();
 ```
 
-First, the testBuilder macro takes a string. That will be the Test's name.
 TestObject instances have a compile time fluent interface (not exactly since the
 final Test will be another type entirely but that's beyond the point) which let
 you change the final test's parameters, such as the command line arguments, the
@@ -49,10 +49,6 @@ expected stdout of the test, the exit code, etc.
 
 Same as before, the builders can be registered and created in the main function,
 and with other qualifiers, but they need to be realizable in compile time.
-
-You **should** keep the auto and not use the exact type of this, but
-in case you ever need it, it would be an instance of something like
-`TestBuilder<MakeTagImpl<sv("FirstTest")>::type, /* other parameters */>`.
 
 ### Registration
 
@@ -77,7 +73,7 @@ Thus, the REGISTER_TEST macro is simply:
 #define REGISTER_TEST(NAME, BUILDER) using NAME = decltype(BUILDER)::Result
 ```
 
-That is why a builder can be instantiate many different tests in between
+That is why a builder can instantiate many different tests in between
 modifications. Each time you modify a Builder, it really creates a new builder
 type with a different nested Result struct; and if every parameter is the same,
 it automagically fall back to the already created type with the same template
