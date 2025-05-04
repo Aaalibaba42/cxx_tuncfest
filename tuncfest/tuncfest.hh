@@ -137,7 +137,12 @@ namespace HackyWrappers
 
     // ostringstreams are notoriously heavy, this should be substancially
     // quicker
-    // TODO 4096
+    //
+    // FIXME:
+    //     I think the best solution since we are going to lambdas for
+    //     validation would be to map to a file if the expected output is more
+    //     than 4096, and fail the test if the output buffer for an expected
+    //     output < 4096 reaches 4096
     struct OutputBuffer
     {
         char data[4096];
@@ -460,71 +465,65 @@ namespace Runner
             epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe[0], &ev_out);
         }
 
+        static inline void handle_output(auto& buffer, int epoll_fd, int fd,
+                                         auto& output_buff,
+                                         std::size_t& remaining)
+        {
+            ssize_t count = read(fd, buffer.data(), buffer.size());
+            if (count > 0)
+            {
+                output_buff.append(buffer.data(),
+                                   static_cast<std::size_t>(count));
+            }
+            else if (count == 0)
+            {
+                close(fd);
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                --remaining;
+            }
+        }
+        static inline void handle_event(int epoll_fd, auto& buffer,
+                                        auto& processes, int fd,
+                                        std::size_t& remaining)
+        {
+            for (auto& proc : processes)
+            {
+                if (proc.stdout_fd == fd)
+                {
+                    handle_output(buffer, epoll_fd, fd, proc.stdout_buff,
+                                  remaining);
+                    return;
+                }
+                else if (proc.stderr_fd == fd)
+                {
+                    handle_output(buffer, epoll_fd, fd, proc.stderr_buff,
+                                  remaining);
+
+                    return;
+                }
+            }
+        };
+
         static inline void collect_processes(int epoll_fd, auto& processes)
         {
             constexpr int MAX_EVENTS = 64;
-            // Let the tests run while collecting the data
             std::array<char, 1024> buffer;
             std::size_t remaining = NumTests * 2;
 
-            // While tests are still running
             while (remaining > 0)
             {
                 gradient_bar(NumTests * 2, remaining - 1);
-                // Get everything that happened
+
                 epoll_event events[MAX_EVENTS];
                 int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 
                 for (int i = 0; i < n; ++i)
                 {
-                    int fd = events[i].data.fd;
-                    for (std::size_t j = 0; j < NumTests; ++j)
-                    {
-                        // For each event, find the corresponding process
-                        if (processes[j].stdout_fd == fd)
-                        {
-                            // Either we collect new stdout, or the process has
-                            // finished
-                            ssize_t count =
-                                read(fd, buffer.data(), buffer.size());
-                            if (count > 0)
-                            {
-                                processes[j].stdout_buff.append(
-                                    buffer.data(),
-                                    static_cast<std::size_t>(count));
-                            }
-                            else if (count == 0)
-                            {
-                                close(fd);
-                                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                                --remaining;
-                            }
-                            break;
-                        }
-                        else if (processes[j].stderr_fd == fd)
-                        {
-                            // Either we collect new stderr, or the process has
-                            // finished
-                            ssize_t count =
-                                read(fd, buffer.data(), buffer.size());
-                            if (count > 0)
-                            {
-                                processes[j].stderr_buff.append(
-                                    buffer.data(),
-                                    static_cast<std::size_t>(count));
-                            }
-                            else if (count == 0)
-                            {
-                                close(fd);
-                                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                                --remaining;
-                            }
-                            break;
-                        }
-                    }
+                    handle_event(epoll_fd, buffer, processes, events[i].data.fd,
+                                 remaining);
                 }
             }
-            // End the bar
+
             gradient_bar(NumTests * 2, 0);
             std::cout << std::endl;
         }
@@ -562,7 +561,6 @@ namespace Runner
             // Let the process run and collect the output
             collect_processes(epoll_fd, processes);
 
-            // TODO refactor this out
             std::cout << std::string(60, '-') << "\n";
             for (std::size_t i = 0; i < NumTests; ++i)
                 display_result(metadata, processes, i);

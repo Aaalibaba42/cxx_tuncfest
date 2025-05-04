@@ -13,7 +13,7 @@ static char const binPath[] = "./myheavycat";
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm">()                                              \
+                "cplrghusetjm" #n>()                                           \
             .with_expected_stdout<                                             \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
@@ -21,7 +21,7 @@ static char const binPath[] = "./myheavycat";
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm">()                                              \
+                "cplrghusetjm" #n>()                                           \
             .with_expected_stderr<                                             \
                 "'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,"             \
                 "cplrghusetjm'.,"                                              \
@@ -29,7 +29,7 @@ static char const binPath[] = "./myheavycat";
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
                 "cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.,cplrghusetjm'.," \
-                "cplrghusetjm">();                                             \
+                "cplrghusetjm" #n>();                                          \
     REGISTER_TEST(Test##n, Test##n##Builder)
 
 Test(1);
