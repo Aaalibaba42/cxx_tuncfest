@@ -114,14 +114,14 @@ using TestFormValidation::TestCase;
 namespace HackyWrappers
 {
     // string_views are not directly usable in templates, making our own
-    template <size_t N>
+    template <std::size_t N>
     struct sv
     {
         char value[N];
 
         consteval sv(char const (&str)[N])
         {
-            for (size_t i = 0; i < N; ++i)
+            for (std::size_t i = 0; i < N; ++i)
                 value[i] = str[i];
         }
 
@@ -130,6 +130,10 @@ namespace HackyWrappers
             return std::string_view(value, N - 1);
         }
     };
+
+    // Deduction guide
+    template <std::size_t N>
+    sv(char const (&)[N]) -> sv<N>;
 
     // ostringstreams are notoriously heavy, this should be substancially
     // quicker
@@ -250,10 +254,10 @@ namespace Runner
             return static_cast<int>(w.ws_col);
         }
 
-        static inline void
-        gradient_bar(std::size_t total, std::size_t left,
-                     std::tuple<int, int, int> start_color = { 227, 52, 0 },
-                     std::tuple<int, int, int> end_color = { 92, 204, 150 })
+        static inline void gradient_bar(
+            std::size_t total, std::size_t left,
+            std::tuple<int, int, int> const& start_color = { 227, 52, 0 },
+            std::tuple<int, int, int> const& end_color = { 92, 204, 150 })
         {
             int width = get_terminal_width();
             int bar_width = width - 20;
@@ -346,11 +350,13 @@ namespace Runner
     // Not inferable in comptime
     struct RuntimeProcess
     {
-        int stdout_fd;
-        int stderr_fd;
-        pid_t pid;
         OutputBuffer stdout_buff;
         OutputBuffer stderr_buff;
+
+        pid_t pid;
+
+        int stdout_fd;
+        int stderr_fd;
     };
 
     template <char const* BinPath, TestCase Test>
@@ -378,10 +384,11 @@ namespace Runner
         std::string_view stdinput;
         std::string_view expected_stdout;
         std::string_view expected_stderr;
-        int expected_exit_code;
 
-        std::size_t command_line_argc;
         char const* const* command_line_argv;
+        std::size_t command_line_argc;
+
+        int expected_exit_code;
     };
 
     template <char const* BinaryPath, TestCase... Tests>
@@ -394,16 +401,16 @@ namespace Runner
 
         // Prefill metadata for the tests in comptime, since these are available
         static constexpr std::array<StaticProcessData, NumTests> metadata = {
-            { StaticProcessData{
-                Tests::test_name, Tests::stdinput, Tests::expected_stdout,
-                Tests::expected_stderr, Tests::expected_exit_code,
-                Tests::command_line_argc,
-                ArgvBuilder<BinaryPath, Tests>::value.data() }... }
+            { StaticProcessData{ Tests::test_name, Tests::stdinput,
+                                 Tests::expected_stdout, Tests::expected_stderr,
+                                 ArgvBuilder<BinaryPath, Tests>::value.data(),
+                                 Tests::command_line_argc,
+                                 Tests::expected_exit_code }... }
         };
 
         // Function to set up pipes and fork a new process
         static void setup_process(int stdin_pipe[2], int stdout_pipe[2],
-                                  int stderr_pipe[2], pid_t& pid, int i)
+                                  int stderr_pipe[2], pid_t& pid, std::size_t i)
         {
             pipe(stdin_pipe);
             pipe(stdout_pipe);
@@ -478,7 +485,7 @@ namespace Runner
 
                 // Fill the runtime struct
                 processes[i] = RuntimeProcess{
-                    stdout_pipe[0], stderr_pipe[0], pid, {}, {}
+                    {}, {}, pid, stdout_pipe[0], stderr_pipe[0]
                 };
             }
 
@@ -508,8 +515,9 @@ namespace Runner
                                 read(fd, buffer.data(), buffer.size());
                             if (count > 0)
                             {
-                                processes[j].stdout_buff.append(buffer.data(),
-                                                                count);
+                                processes[j].stdout_buff.append(
+                                    buffer.data(),
+                                    static_cast<std::size_t>(count));
                             }
                             else if (count == 0)
                             {
@@ -527,8 +535,9 @@ namespace Runner
                                 read(fd, buffer.data(), buffer.size());
                             if (count > 0)
                             {
-                                processes[j].stderr_buff.append(buffer.data(),
-                                                                count);
+                                processes[j].stderr_buff.append(
+                                    buffer.data(),
+                                    static_cast<std::size_t>(count));
                             }
                             else if (count == 0)
                             {
