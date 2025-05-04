@@ -256,8 +256,10 @@ namespace Runner
 
         static inline void gradient_bar(
             std::size_t total, std::size_t left,
-            std::tuple<int, int, int> const& start_color = { 227, 52, 0 },
-            std::tuple<int, int, int> const& end_color = { 92, 204, 150 })
+            std::tuple<unsigned char, unsigned char, unsigned char> const&
+                start_color = { 227, 52, 0 },
+            std::tuple<unsigned char, unsigned char, unsigned char> const&
+                end_color = { 92, 204, 150 })
         {
             int width = get_terminal_width();
             int bar_width = width - 20;
@@ -283,7 +285,7 @@ namespace Runner
                       << static_cast<int>(progress * 100) << "%" << std::flush;
         };
 
-        static inline void display_output(auto const& metadata,
+        static inline void display_result(auto const& metadata,
                                           auto const& processes, std::size_t i)
         {
             int status = 0;
@@ -345,7 +347,7 @@ namespace Runner
     } // namespace Output
     using Output::get_terminal_width;
     using Output::gradient_bar;
-    using Output::display_output;
+    using Output::display_result;
 
     // Not inferable in comptime
     struct RuntimeProcess
@@ -409,8 +411,9 @@ namespace Runner
         };
 
         // Function to set up pipes and fork a new process
-        static void setup_process(int stdin_pipe[2], int stdout_pipe[2],
-                                  int stderr_pipe[2], pid_t& pid, std::size_t i)
+        static inline void setup_process(int stdin_pipe[2], int stdout_pipe[2],
+                                         int stderr_pipe[2], pid_t& pid,
+                                         std::size_t i)
         {
             pipe(stdin_pipe);
             pipe(stdout_pipe);
@@ -451,44 +454,15 @@ namespace Runner
             fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK);
         }
 
-    public:
-        // Main function for the runner
-        static void run_all_tests()
+        static inline void subscribe_to_epoll(int epoll_fd, int pipe[2])
+        {
+            epoll_event ev_out{ .events = EPOLLIN, .data = { .fd = pipe[0] } };
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe[0], &ev_out);
+        }
+
+        static inline void collect_processes(int epoll_fd, auto& processes)
         {
             constexpr int MAX_EVENTS = 64;
-            // Epoll to let us run the tests in parallel while collecting I/O
-            int epoll_fd = epoll_create1(0);
-            if (epoll_fd == -1)
-            {
-                perror("epoll_create1");
-                return;
-            }
-
-            // Start every test in parallel
-            std::array<RuntimeProcess, NumTests> processes;
-            for (std::size_t i = 0; i < NumTests; ++i)
-            {
-                int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
-                pid_t pid;
-
-                setup_process(stdin_pipe, stdout_pipe, stderr_pipe, pid, i);
-
-                // Subscribe the process's stdout to the epoll
-                epoll_event ev_out{ .events = EPOLLIN,
-                                    .data = { .fd = stdout_pipe[0] } };
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stdout_pipe[0], &ev_out);
-
-                // Subscribe the process's stderr to the epoll
-                epoll_event ev_err{ .events = EPOLLIN,
-                                    .data = { .fd = stderr_pipe[0] } };
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, stderr_pipe[0], &ev_err);
-
-                // Fill the runtime struct
-                processes[i] = RuntimeProcess{
-                    {}, {}, pid, stdout_pipe[0], stderr_pipe[0]
-                };
-            }
-
             // Let the tests run while collecting the data
             std::array<char, 1024> buffer;
             std::size_t remaining = NumTests * 2;
@@ -553,11 +527,45 @@ namespace Runner
             // End the bar
             gradient_bar(NumTests * 2, 0);
             std::cout << std::endl;
+        }
+
+    public:
+        // Main function for the runner
+        static void run_all_tests()
+        {
+            // Epoll to let us run the tests in parallel while collecting I/O
+            int epoll_fd = epoll_create1(0);
+            if (epoll_fd == -1)
+            {
+                perror("epoll_create1");
+                return;
+            }
+
+            // Start every test in parallel
+            std::array<RuntimeProcess, NumTests> processes;
+            for (std::size_t i = 0; i < NumTests; ++i)
+            {
+                int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
+                pid_t pid;
+
+                setup_process(stdin_pipe, stdout_pipe, stderr_pipe, pid, i);
+
+                subscribe_to_epoll(epoll_fd, stdout_pipe);
+                subscribe_to_epoll(epoll_fd, stderr_pipe);
+
+                // Fill the runtime struct
+                processes[i] = RuntimeProcess{
+                    {}, {}, pid, stdout_pipe[0], stderr_pipe[0]
+                };
+            }
+
+            // Let the process run and collect the output
+            collect_processes(epoll_fd, processes);
 
             // TODO refactor this out
             std::cout << std::string(60, '-') << "\n";
             for (std::size_t i = 0; i < NumTests; ++i)
-                display_output(metadata, processes, i);
+                display_result(metadata, processes, i);
 
             // We are done (Yay \o/)
             close(epoll_fd);
