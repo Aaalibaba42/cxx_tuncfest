@@ -27,7 +27,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(WARN_FLAGS "${WARN_FLAGS} -Wfloat-equal -Wundef -Wshadow -Wswitch-enum -Wlogical-op-parentheses -Wdouble-promotion -Wformat=2 -Wmissing-noreturn -Wcast-align -Wcast-qual -Wstring-compare -Wcovered-switch-default -Wunreachable-code -Wcomma -Wextra-semi -Wnewline-eof -Wno-unused-command-line-argument")
+    # Everything but the compat, and some other clumbersome things
+    set(WARN_FLAGS "${WARN_FLAGS} -Weverything -Wno-pre-c++14-compat -Wno-c++20-compat -Wno-c++98-compat -Wno-c++98-compat-extra-semi -Wno-pre-c++20-compat-pedantic -Wno-implicit-int-float-conversion -ferror-limit=1000 -Wno-c++11-narrowing -Wno-padded -Wno-unsafe-buffer-usage")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
