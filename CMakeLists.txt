@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tuncfest VERSION 0.1.0 LANGUAGES CXX)
+project(tuncfest VERSION 1.0.0 LANGUAGES CXX)
 
 # `static operator()`
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
