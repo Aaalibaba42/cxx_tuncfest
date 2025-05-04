@@ -278,9 +278,70 @@ namespace Runner
             std::cout << "] " << std::setw(3)
                       << static_cast<int>(progress * 100) << "%" << std::flush;
         };
+
+        void display_output(auto const& metadata, auto const& processes,
+                            std::size_t i)
+        {
+            int status = 0;
+            waitpid(processes[i].pid, &status, 0);
+            int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+
+            auto const& expected_stdout = metadata[i].expected_stdout;
+            auto const& actual_stdout = processes[i].stdout_buff.view();
+            auto const& expected_stderr = metadata[i].expected_stderr;
+            auto const& actual_stderr = processes[i].stderr_buff.view();
+            int expected_exit = metadata[i].expected_exit_code;
+
+            bool passed = exit_code == expected_exit
+                && actual_stdout == expected_stdout
+                && actual_stderr == expected_stderr;
+
+            std::cout << BOLD << "[" << metadata[i].test_name << "] "
+                      << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
+                      << "\n";
+
+            if (!passed)
+            {
+                auto print_diff = [](auto const& label, auto const& expected,
+                                     auto const& actual) static {
+                    std::cout << YELLOW << "  " << label << ":\n" << RESET;
+                    if (expected != actual)
+                    {
+                        std::cout << "    - Expected: " << GREEN << "\""
+                                  << expected << "\"" << RESET << "\n"
+                                  << "    + Actual:   " << RED << "\"" << actual
+                                  << "\"" << RESET << "\n";
+                    }
+                    else
+                    {
+                        std::cout << "    " << GREEN << "(match)" << RESET
+                                  << "\n";
+                    }
+                };
+
+                print_diff("Stdout", expected_stdout, actual_stdout);
+                print_diff("Stderr", expected_stderr, actual_stderr);
+
+                std::cout << YELLOW << "  Exit Code:\n" << RESET;
+                if (exit_code != expected_exit)
+                {
+                    std::cout << "    - Expected: " << GREEN << expected_exit
+                              << RESET << "\n"
+                              << "    + Actual:   " << RED << exit_code << RESET
+                              << "\n";
+                }
+                else
+                {
+                    std::cout << "    " << GREEN << "(match)" << RESET << "\n";
+                }
+            }
+
+            std::cout << std::string(60, '-') << "\n";
+        }
     } // namespace Output
     using Output::get_terminal_width;
     using Output::gradient_bar;
+    using Output::display_output;
 
     // Not inferable in comptime
     struct RuntimeProcess
@@ -487,65 +548,7 @@ namespace Runner
             // TODO refactor this out
             std::cout << std::string(60, '-') << "\n";
             for (std::size_t i = 0; i < NumTests; ++i)
-            {
-                int status = 0;
-                waitpid(processes[i].pid, &status, 0);
-                int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-
-                auto const& expected_stdout = metadata[i].expected_stdout;
-                auto const& actual_stdout = processes[i].stdout_buff.view();
-                auto const& expected_stderr = metadata[i].expected_stderr;
-                auto const& actual_stderr = processes[i].stderr_buff.view();
-                int expected_exit = metadata[i].expected_exit_code;
-
-                bool passed = exit_code == expected_exit
-                    && actual_stdout == expected_stdout
-                    && actual_stderr == expected_stderr;
-
-                std::cout << BOLD << "[" << metadata[i].test_name << "] "
-                          << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
-                          << "\n";
-
-                if (!passed)
-                {
-                    auto print_diff = [](auto const& label,
-                                         auto const& expected,
-                                         auto const& actual) static {
-                        std::cout << YELLOW << "  " << label << ":\n" << RESET;
-                        if (expected != actual)
-                        {
-                            std::cout << "    - Expected: " << GREEN << "\""
-                                      << expected << "\"" << RESET << "\n"
-                                      << "    + Actual:   " << RED << "\""
-                                      << actual << "\"" << RESET << "\n";
-                        }
-                        else
-                        {
-                            std::cout << "    " << GREEN << "(match)" << RESET
-                                      << "\n";
-                        }
-                    };
-
-                    print_diff("Stdout", expected_stdout, actual_stdout);
-                    print_diff("Stderr", expected_stderr, actual_stderr);
-
-                    std::cout << YELLOW << "  Exit Code:\n" << RESET;
-                    if (exit_code != expected_exit)
-                    {
-                        std::cout << "    - Expected: " << GREEN
-                                  << expected_exit << RESET << "\n"
-                                  << "    + Actual:   " << RED << exit_code
-                                  << RESET << "\n";
-                    }
-                    else
-                    {
-                        std::cout << "    " << GREEN << "(match)" << RESET
-                                  << "\n";
-                    }
-                }
-
-                std::cout << std::string(60, '-') << "\n";
-            }
+                display_output(metadata, processes, i);
 
             // We are done (Yay \o/)
             close(epoll_fd);
