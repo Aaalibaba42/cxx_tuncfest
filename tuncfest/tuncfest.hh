@@ -243,14 +243,14 @@ namespace Runner
 #define RESET "\033[0m"
 #define BOLD "\033[1m"
 
-        inline int get_terminal_width()
+        static inline int get_terminal_width()
         {
             struct winsize w;
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
             return static_cast<int>(w.ws_col);
         }
 
-        static void
+        static inline void
         gradient_bar(std::size_t total, std::size_t left,
                      std::tuple<int, int, int> start_color = { 227, 52, 0 },
                      std::tuple<int, int, int> end_color = { 92, 204, 150 })
@@ -279,8 +279,8 @@ namespace Runner
                       << static_cast<int>(progress * 100) << "%" << std::flush;
         };
 
-        void display_output(auto const& metadata, auto const& processes,
-                            std::size_t i)
+        static inline void display_output(auto const& metadata,
+                                          auto const& processes, std::size_t i)
         {
             int status = 0;
             waitpid(processes[i].pid, &status, 0);
