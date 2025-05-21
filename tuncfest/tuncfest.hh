@@ -60,6 +60,7 @@ namespace TestFormValidation
         }();
     };
 
+    /*
     template <typename T>
     concept HasConstexprStdout = requires {
         requires std::is_constant_evaluated();
@@ -92,6 +93,7 @@ namespace TestFormValidation
                 "The test does contain an expected exit code");
         }();
     };
+    */
 
     template <typename T>
     concept HasConstexprCommandLineArgs = requires {
@@ -111,9 +113,11 @@ namespace TestFormValidation
     };
 
     template <typename T>
-    concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
-        && HasConstexprStdout<T> && HasConstexprStderr<T>
-        && HasConstexprExitCode<T> && HasConstexprCommandLineArgs<T>;
+    concept TestCase = HasConstexprName<T>
+        && HasConstexprInput<T>
+        // && HasConstexprStdout<T> && HasConstexprStderr<T>
+        // && HasConstexprExitCode<T>
+        && HasConstexprCommandLineArgs<T>;
 } // namespace TestFormValidation
 // Concept that verifies something adheres to the prototype of a test.
 using TestFormValidation::TestCase;
@@ -182,8 +186,15 @@ namespace TestBuilderClass
     // TODO Add callable validator for stdout/stderr/exit_code *instead* of
     //      "literal" comparison (maybe when implementing, convert literal
     //      comparison to lambda callable that compares to the lit)
-    template <sv Name = "", sv StdInput = "", sv StdOut = "", sv StdErr = "",
-              int ExitCode = 0, sv... CmdLineArgs>
+    template <sv Name = "", sv StdInput = "",
+              bool (*StdOut)(std::string_view) = [](std::string_view) -> bool {
+                  return true;
+              },
+              bool (*StdErr)(std::string_view) = [](std::string_view) -> bool {
+                  return true;
+              },
+              bool (*ExitCode)(int) = [](int) -> bool { return true; },
+              sv... CmdLineArgs>
     struct TestBuilder
     {
         template <sv NewName>
@@ -200,21 +211,21 @@ namespace TestBuilderClass
                                CmdLineArgs...>{};
         }
 
-        template <sv NewOut>
+        template <bool (*NewOut)(std::string_view)>
         consteval auto with_expected_stdout() const
         {
             return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode,
                                CmdLineArgs...>{};
         }
 
-        template <sv NewErr>
+        template <bool (*NewErr)(std::string_view)>
         consteval auto with_expected_stderr() const
         {
             return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode,
                                CmdLineArgs...>{};
         }
 
-        template <int NewExit>
+        template <bool (*NewExit)(int)>
         consteval auto with_expected_exit_code() const
         {
             return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit,
@@ -233,9 +244,10 @@ namespace TestBuilderClass
         {
             static constexpr std::string_view test_name = Name;
             static constexpr std::string_view stdinput = StdInput;
-            static constexpr std::string_view expected_stdout = StdOut;
-            static constexpr std::string_view expected_stderr = StdErr;
-            static constexpr int expected_exit_code = ExitCode;
+            // TODO change name of these
+            static constexpr bool (*expected_stdout)(std::string_view) = StdOut;
+            static constexpr bool (*expected_stderr)(std::string_view) = StdErr;
+            static constexpr bool (*expected_exit_code)(int) = ExitCode;
 
             static constexpr std::size_t command_line_argc =
                 sizeof...(CmdLineArgs);
@@ -304,15 +316,16 @@ namespace Runner
             waitpid(processes[i].pid, &status, 0);
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
-            auto const& expected_stdout = metadata[i].expected_stdout;
-            auto const& actual_stdout = processes[i].stdout_buff.view();
-            auto const& expected_stderr = metadata[i].expected_stderr;
-            auto const& actual_stderr = processes[i].stderr_buff.view();
-            int expected_exit = metadata[i].expected_exit_code;
+            // TODO change name of the lambdas (things in metadata)
+            auto& expected_stdout = metadata[i].expected_stdout;
+            auto actual_stdout = processes[i].stdout_buff.view();
+            auto& expected_stderr = metadata[i].expected_stderr;
+            auto actual_stderr = processes[i].stderr_buff.view();
+            auto& expected_exit = metadata[i].expected_exit_code;
 
-            bool passed = exit_code == expected_exit
-                && actual_stdout == expected_stdout
-                && actual_stderr == expected_stderr;
+            bool passed = expected_exit(exit_code)
+                && expected_stdout(actual_stdout)
+                && expected_stderr(actual_stderr);
 
             std::cout << BOLD << "[" << metadata[i].test_name << "] "
                       << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
@@ -323,10 +336,11 @@ namespace Runner
                 auto print_diff = [](auto const& label, auto const& expected,
                                      auto const& actual) static {
                     std::cout << YELLOW << "  " << label << ":\n" << RESET;
-                    if (expected != actual)
+                    if (!expected(actual))
                     {
                         std::cout << "    - Expected: " << GREEN << "\""
-                                  << expected << "\"" << RESET << "\n"
+                                  << "<placeholder str>" << "\"" << RESET
+                                  << "\n"
                                   << "    + Actual:   " << RED << "\"" << actual
                                   << "\"" << RESET << "\n";
                     }
@@ -341,10 +355,10 @@ namespace Runner
                 print_diff("Stderr", expected_stderr, actual_stderr);
 
                 std::cout << YELLOW << "  Exit Code:\n" << RESET;
-                if (exit_code != expected_exit)
+                if (!expected_exit(exit_code))
                 {
-                    std::cout << "    - Expected: " << GREEN << expected_exit
-                              << RESET << "\n"
+                    std::cout << "    - Expected: " << GREEN
+                              << "<placeholder exit_code>" << RESET << "\n"
                               << "    + Actual:   " << RED << exit_code << RESET
                               << "\n";
                 }
@@ -396,13 +410,13 @@ namespace Runner
     {
         std::string_view test_name;
         std::string_view stdinput;
-        std::string_view expected_stdout;
-        std::string_view expected_stderr;
+        bool (*expected_stdout)(std::string_view);
+        bool (*expected_stderr)(std::string_view);
 
         char const* const* command_line_argv;
         std::size_t command_line_argc;
 
-        int expected_exit_code;
+        bool (*expected_exit_code)(int);
     };
 
     template <char const* BinaryPath, TestCase... Tests>
