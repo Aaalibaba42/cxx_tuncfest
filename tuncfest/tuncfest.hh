@@ -1,11 +1,18 @@
 #include <array>
+#include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <fcntl.h>
 #include <iomanip>
 #include <iostream>
+#include <string>
+#include <string_view>
 #include <sys/epoll.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
+#include <tuple>
 #include <type_traits>
 #include <unistd.h>
 
@@ -56,34 +63,19 @@ namespace TestFormValidation
     template <typename T>
     concept HasConstexprStdout = requires {
         requires std::is_constant_evaluated();
-        []() static consteval {
-            auto& expected_stdout = T::expected_stdout;
-            static_assert(std::is_same_v<decltype(expected_stdout),
-                                         std::string_view const&>,
-                          "The test does contain an expected_stdout");
-        }();
+        { T::validate_stdout(std::string_view{}) } -> std::same_as<bool>;
     };
 
     template <typename T>
     concept HasConstexprStderr = requires {
         requires std::is_constant_evaluated();
-        []() static consteval {
-            auto& expected_stderr = T::expected_stderr;
-            static_assert(std::is_same_v<decltype(expected_stderr),
-                                         std::string_view const&>,
-                          "The test does contain an expected_stderr");
-        }();
+        { T::validate_stderr(std::string_view{}) } -> std::same_as<bool>;
     };
 
     template <typename T>
     concept HasConstexprExitCode = requires {
         requires std::is_constant_evaluated();
-        []() static consteval {
-            static_assert(
-                std::is_same_v<
-                    std::remove_cvref_t<decltype(T::expected_exit_code)>, int>,
-                "The test does contain an expected exit code");
-        }();
+        { T::validate_exit_code(int{}) } -> std::same_as<bool>;
     };
 
     template <typename T>
@@ -172,63 +164,114 @@ using HackyWrappers::OutputBuffer;
 namespace TestBuilderClass
 {
     // TODO Add timeout after which we kill the process
-    // TODO Add callable validator for stdout/stderr/exit_code *instead* of
-    //      "literal" comparison (maybe when implementing, convert literal
-    //      comparison to lambda callable that compares to the lit)
-    template <sv Name = "", sv StdInput = "", sv StdOut = "", sv StdErr = "",
-              int ExitCode = 0, sv... CmdLineArgs>
+    template <sv Name = "", sv StdInput = "",
+              bool (*StdOutValidation)(std::string_view) =
+                  [](std::string_view) -> bool { return true; },
+              bool (*StdErrValidation)(std::string_view) =
+                  [](std::string_view) -> bool { return true; },
+              bool (*ExitCodeValidation)(int) = [](int) -> bool {
+                  return true;
+              },
+              sv... CmdLineArgs>
     struct TestBuilder
     {
+        // -- Tests modifiers -- //
         template <sv NewName>
         consteval auto with_name() const
         {
-            return TestBuilder<NewName, StdInput, StdOut, StdErr, ExitCode,
+            return TestBuilder<NewName, StdInput, StdOutValidation,
+                               StdErrValidation, ExitCodeValidation,
                                CmdLineArgs...>{};
         }
 
         template <sv NewInput>
         consteval auto with_stdinput() const
         {
-            return TestBuilder<Name, NewInput, StdOut, StdErr, ExitCode,
-                               CmdLineArgs...>{};
-        }
-
-        template <sv NewOut>
-        consteval auto with_expected_stdout() const
-        {
-            return TestBuilder<Name, StdInput, NewOut, StdErr, ExitCode,
-                               CmdLineArgs...>{};
-        }
-
-        template <sv NewErr>
-        consteval auto with_expected_stderr() const
-        {
-            return TestBuilder<Name, StdInput, StdOut, NewErr, ExitCode,
-                               CmdLineArgs...>{};
-        }
-
-        template <int NewExit>
-        consteval auto with_expected_exit_code() const
-        {
-            return TestBuilder<Name, StdInput, StdOut, StdErr, NewExit,
+            return TestBuilder<Name, NewInput, StdOutValidation,
+                               StdErrValidation, ExitCodeValidation,
                                CmdLineArgs...>{};
         }
 
         template <sv... NewArgs>
         consteval auto with_command_line() const
         {
-            return TestBuilder<Name, StdInput, StdOut, StdErr, ExitCode,
+            return TestBuilder<Name, StdInput, StdOutValidation,
+                               StdErrValidation, ExitCodeValidation,
                                NewArgs...>{};
         }
 
-        // Emit the actual struct
+        // -- Validation schemes -- //
+
+        //    Lambda as custom verifier
+        template <bool (*NewOut)(std::string_view)>
+        consteval auto with_stdout_validation() const
+        {
+            return TestBuilder<Name, StdInput, NewOut, StdErrValidation,
+                               ExitCodeValidation, CmdLineArgs...>{};
+        }
+
+        template <bool (*NewErr)(std::string_view)>
+        consteval auto with_stderr_validation() const
+        {
+            return TestBuilder<Name, StdInput, StdOutValidation, NewErr,
+                               ExitCodeValidation, CmdLineArgs...>{};
+        }
+
+        template <bool (*NewExit)(int)>
+        consteval auto with_exit_code_validation() const
+        {
+            return TestBuilder<Name, StdInput, StdOutValidation,
+                               StdErrValidation, NewExit, CmdLineArgs...>{};
+        }
+
+        //    Exact Match
+
+        // TODO make it VA
+        template <sv ExpectedStdout>
+        consteval auto with_stdout_match() const
+        {
+            return TestBuilder<Name, StdInput,
+                               [](std::string_view actual_stdout) -> bool {
+                                   return actual_stdout == ExpectedStdout;
+                               },
+                               StdErrValidation, ExitCodeValidation,
+                               CmdLineArgs...>{};
+        }
+
+        // TODO make it VA
+        template <sv ExpectedStderr>
+        consteval auto with_stderr_match() const
+        {
+            return TestBuilder<Name, StdInput, StdOutValidation,
+                               [](std::string_view actual_stderr) -> bool {
+                                   return actual_stderr == ExpectedStderr;
+                               },
+                               ExitCodeValidation, CmdLineArgs...>{};
+        }
+
+        // TODO make it VA
+        template <int ExpectedExitCode>
+        consteval auto with_exit_code_match() const
+        {
+            return TestBuilder<Name, StdInput, StdOutValidation,
+                               StdErrValidation,
+                               [](int actual_exit_code) -> bool {
+                                   return actual_exit_code == ExpectedExitCode;
+                               },
+                               CmdLineArgs...>{};
+        }
+
+        // Emit the actual struct for the Test
         struct Result
         {
             static constexpr std::string_view test_name = Name;
             static constexpr std::string_view stdinput = StdInput;
-            static constexpr std::string_view expected_stdout = StdOut;
-            static constexpr std::string_view expected_stderr = StdErr;
-            static constexpr int expected_exit_code = ExitCode;
+            static constexpr bool (*validate_stdout)(std::string_view) =
+                StdOutValidation;
+            static constexpr bool (*validate_stderr)(std::string_view) =
+                StdErrValidation;
+            static constexpr bool (*validate_exit_code)(int) =
+                ExitCodeValidation;
 
             static constexpr std::size_t command_line_argc =
                 sizeof...(CmdLineArgs);
@@ -297,15 +340,16 @@ namespace Runner
             waitpid(processes[i].pid, &status, 0);
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
-            auto const& expected_stdout = metadata[i].expected_stdout;
-            auto const& actual_stdout = processes[i].stdout_buff.view();
-            auto const& expected_stderr = metadata[i].expected_stderr;
-            auto const& actual_stderr = processes[i].stderr_buff.view();
-            int expected_exit = metadata[i].expected_exit_code;
+            // TODO change name of the lambdas (things in metadata)
+            auto& expected_stdout = metadata[i].expected_stdout;
+            auto actual_stdout = processes[i].stdout_buff.view();
+            auto& expected_stderr = metadata[i].expected_stderr;
+            auto actual_stderr = processes[i].stderr_buff.view();
+            auto& expected_exit = metadata[i].expected_exit_code;
 
-            bool passed = exit_code == expected_exit
-                && actual_stdout == expected_stdout
-                && actual_stderr == expected_stderr;
+            bool passed = expected_exit(exit_code)
+                && expected_stdout(actual_stdout)
+                && expected_stderr(actual_stderr);
 
             std::cout << BOLD << "[" << metadata[i].test_name << "] "
                       << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
@@ -316,10 +360,11 @@ namespace Runner
                 auto print_diff = [](auto const& label, auto const& expected,
                                      auto const& actual) static {
                     std::cout << YELLOW << "  " << label << ":\n" << RESET;
-                    if (expected != actual)
+                    if (!expected(actual))
                     {
                         std::cout << "    - Expected: " << GREEN << "\""
-                                  << expected << "\"" << RESET << "\n"
+                                  << "<placeholder str>" << "\"" << RESET
+                                  << "\n"
                                   << "    + Actual:   " << RED << "\"" << actual
                                   << "\"" << RESET << "\n";
                     }
@@ -334,10 +379,10 @@ namespace Runner
                 print_diff("Stderr", expected_stderr, actual_stderr);
 
                 std::cout << YELLOW << "  Exit Code:\n" << RESET;
-                if (exit_code != expected_exit)
+                if (!expected_exit(exit_code))
                 {
-                    std::cout << "    - Expected: " << GREEN << expected_exit
-                              << RESET << "\n"
+                    std::cout << "    - Expected: " << GREEN
+                              << "<placeholder exit_code>" << RESET << "\n"
                               << "    + Actual:   " << RED << exit_code << RESET
                               << "\n";
                 }
@@ -389,13 +434,13 @@ namespace Runner
     {
         std::string_view test_name;
         std::string_view stdinput;
-        std::string_view expected_stdout;
-        std::string_view expected_stderr;
+        bool (*expected_stdout)(std::string_view);
+        bool (*expected_stderr)(std::string_view);
 
         char const* const* command_line_argv;
         std::size_t command_line_argc;
 
-        int expected_exit_code;
+        bool (*expected_exit_code)(int);
     };
 
     template <char const* BinaryPath, TestCase... Tests>
@@ -409,10 +454,10 @@ namespace Runner
         // Prefill metadata for the tests in comptime, since these are available
         static constexpr std::array<StaticProcessData, NumTests> metadata = {
             { StaticProcessData{ Tests::test_name, Tests::stdinput,
-                                 Tests::expected_stdout, Tests::expected_stderr,
+                                 Tests::validate_stdout, Tests::validate_stderr,
                                  ArgvBuilder<BinaryPath, Tests>::value.data(),
                                  Tests::command_line_argc,
-                                 Tests::expected_exit_code }... }
+                                 Tests::validate_exit_code }... }
         };
 
         // Function to set up pipes and fork a new process
