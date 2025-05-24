@@ -1,6 +1,0 @@
-Using lambdas directly will be hard since they are distinct types, and
-thus don't fit in a std::array naturally. I could do a variant of all the
-decltype(<lambdas>), that would fit an array but it's kind of dirty, I could try
-the `+[]() {}` to get function pointers which could fit in a std::array, or have
-the tests embedded in variadic template parameters, I'm not sure which way is
-the best as of now, but I wanted to write it down for when I'll implement them
