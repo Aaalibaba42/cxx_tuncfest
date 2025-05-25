@@ -42,33 +42,52 @@ A TestBuilder is a templated class with the following template parameters:
 
 1. Test name: String (Default = "")
 2. Stdin passed to the program: String (Default = "")
-3. Expected standard output: String (Default = "")
-4. Expected standard error: String (Default = "")
-5. Expected exit code: Integer (Default = 0)
+3. Stdout Validation: `bool (*)(std::string_view)` (Default =
+`[](std::string_view) { return true; })`
+4. Stderr Validation: `bool (*)(std::string_view)` (Default =
+`[](std::string_view) { return true; })`
+5. Exit Code Validation: `bool (*)(int)` (Default = `[](int) { return true; }`)
 6. Variadic command line arguments: String...
 
 The TestBuilder has a compile time template fluent interface builder pattern
 that let you change any of these individually. The method to change the
 parameters individually are:
 
+Direct setters:
 - with_name<"TestName">()
 - with_stdinput<"Input">()
-- with_expected_stdout<"Output">()
-- with_expected_stderr<"Error output">()
-- with_expected_exit_code<0>()
 - with_command_line<"--optionName", "-o", "output.xml">()
+- with_stdout_validation<funcptr>()
+- with_expected_stderr<funcptr>()
+- with_expected_exit_code<funcptr>()
+
+Tip: don't forget these last 3 need *function pointers*, so you can either
+declare functions and pass them, or use **captureless** lambdas (inlined or in
+a variable) since captureless lambdas are implicitely convertible to function
+pointers; you can also use the `+lambda` syntax to explicitely convert lambdas
+to function pointers.
+
+I have also devised helper methods to instantiate lambdas for the user for the most common cases:
+- with_stdout_match<"Expected Stdout">
+- with_stderr_match<"Expected Stderr">
+- with_exit_code_match<0>
 
 Thus, the *advised* way of declaring a Builder is:
 
 ```cpp
 constexpr auto test_builder_1 = TestBuilder<"FirstTest">()
-                                  .with_expected_stdout<"test\n">()
+                                  .with_stdout_match<"test\n">()
                                   .with_command_line<"test">();
 // Or to be even more explicit
-constexpr auto test_builder_2 = TestBuilder<>()
-                                  .with_name<"SecondTest">()
-                                  .with_command_line<"much", "arguments">()
-                                  .with_expected_stdout<"much arguments\n">();
+constexpr auto test_builder_2 =
+    TestBuilder<>()
+        .with_name<"SecondTest">()
+        .with_command_line<"much", "arguments">()
+        .with_stdout_validation<[](std::string_view got) -> bool {
+            auto nb_spaces = std::count_if(
+                got.begin(), got.end(), [](char c) { return std::isspace(c); });
+            return nb_spaces == 2;
+        }>();
 ```
 
 As you may notice, the order of the setter methods is free. You can also
@@ -80,20 +99,20 @@ factorize test attributes:
 // point is to show that you are free to do stuff like this.
 
 constexpr auto default_sucess = TestBuilder<>()
-                                    .with_exit_code<0>()
-                                    .with_expected_stderr<"">();
+                                    .with_exit_code_match<0>();
+
 constexpr auto default_failure = TestBuilder<>()
-                                     .with_exit_code<1>()
-                                     .with_expected_stderr<"Failed\n">();
+                                     .with_exit_code_match<1>()
+                                     .with_stderr_match<"Failed\n">();
 
 // "Inherit" the default_sucess parameters
 constexpr auto success_test1 = default_sucess
                                    .with_name<"Newline">()
-                                   .with_expected_stdout<"38\n">();
+                                   .with_stdout_match<"38\n">();
 constexpr auto success_test2 = default_sucess
                                    .with_name<"NoNewline">()
                                    .with_command_line<"--no_newline">()
-                                   .with_expected_stdout<"38">();
+                                   .with_stdout_match<"38">();
 
 // "Inherits" the default_failure parameters
 constexpr auto failing_test1 = default_failure
@@ -152,11 +171,11 @@ static char const binPath[] = "/usr/bin/cat";
 
 constexpr auto FirstTestBuilder = TestBuilder<"FirstTest">()
                                       .with_stdinput<"42">()
-                                      .with_expected_stdout<"42">();
+                                      .with_stdout_match<"42">();
 
 constexpr auto SecondTestBuilder = TestBuilder<"SecondTest">()
                                        .with_stdinput<"43\n">()
-                                       .with_expected_stdout<"43\n">();
+                                       .with_stdout_match<"43\n">();
 
 REGISTER_TEST(FirstTest, FirstTestBuilder);
 REGISTER_TEST(SecondTest, SecondTestBuilder);
