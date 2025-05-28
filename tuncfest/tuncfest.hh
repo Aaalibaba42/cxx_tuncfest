@@ -61,19 +61,19 @@ namespace TestFormValidation
     };
 
     template <typename T>
-    concept HasConstexprStdout = requires {
+    concept HasConstexprStdoutValidation = requires {
         requires std::is_constant_evaluated();
         { T::validate_stdout(std::string_view{}) } -> std::same_as<bool>;
     };
 
     template <typename T>
-    concept HasConstexprStderr = requires {
+    concept HasConstexprStderrValidation = requires {
         requires std::is_constant_evaluated();
         { T::validate_stderr(std::string_view{}) } -> std::same_as<bool>;
     };
 
     template <typename T>
-    concept HasConstexprExitCode = requires {
+    concept HasConstexprExitCodeValidation = requires {
         requires std::is_constant_evaluated();
         { T::validate_exit_code(int{}) } -> std::same_as<bool>;
     };
@@ -97,8 +97,8 @@ namespace TestFormValidation
 
     template <typename T>
     concept TestCase = HasConstexprName<T> && HasConstexprInput<T>
-        && HasConstexprStdout<T> && HasConstexprStderr<T>
-        && HasConstexprExitCode<T> && HasConstexprCommandLineArgs<T>;
+        && HasConstexprStdoutValidation<T> && HasConstexprStderrValidation<T>
+        && HasConstexprExitCodeValidation<T> && HasConstexprCommandLineArgs<T>;
 } // namespace TestFormValidation
 // Concept that verifies something adheres to the prototype of a test.
 using TestFormValidation::TestCase;
