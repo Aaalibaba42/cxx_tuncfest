@@ -1,6 +1,8 @@
 Samples
 =======
 
+These samples are pinned to Release 1.0.0
+
 [Simple](simple)
 ----------------
 
