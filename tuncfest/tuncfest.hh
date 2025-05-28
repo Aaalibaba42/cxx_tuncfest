@@ -340,55 +340,65 @@ namespace Runner
             waitpid(processes[i].pid, &status, 0);
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 
-            // TODO change name of the lambdas (things in metadata)
-            auto& expected_stdout = metadata[i].expected_stdout;
+            auto& stdout_validation = metadata[i].stdout_validation;
             auto actual_stdout = processes[i].stdout_buff.view();
-            auto& expected_stderr = metadata[i].expected_stderr;
+            auto& stderr_validation = metadata[i].stderr_validation;
             auto actual_stderr = processes[i].stderr_buff.view();
-            auto& expected_exit = metadata[i].expected_exit_code;
+            auto& exit_code_validation = metadata[i].exit_code_validation;
 
-            bool passed = expected_exit(exit_code)
-                && expected_stdout(actual_stdout)
-                && expected_stderr(actual_stderr);
+            bool passed_exit_code = exit_code_validation(exit_code);
+            bool passed_stdout = stdout_validation(actual_stdout);
+            bool passed_stderr = stderr_validation(actual_stderr);
+            bool passed = passed_exit_code && passed_stdout && passed_stderr;
 
             std::cout << BOLD << "[" << metadata[i].test_name << "] "
-                      << (passed ? GREEN "✅ PASS" : RED "❌ FAIL") << RESET
-                      << "\n";
+                      << (passed ? GREEN "✔ PASS" : RED "✘ FAIL") << RESET
+                      << '\n';
 
             if (!passed)
             {
-                auto print_diff = [](auto const& label, auto const& expected,
-                                     auto const& actual) static {
-                    std::cout << YELLOW << "  " << label << ":\n" << RESET;
-                    if (!expected(actual))
-                    {
-                        std::cout << "    - Expected: " << GREEN << "\""
-                                  << "<placeholder str>" << "\"" << RESET
-                                  << "\n"
-                                  << "    + Actual:   " << RED << "\"" << actual
-                                  << "\"" << RESET << "\n";
-                    }
-                    else
-                    {
-                        std::cout << "    " << GREEN << "(match)" << RESET
-                                  << "\n";
-                    }
-                };
+                std::cout << YELLOW << "Details:\n" << RESET;
 
-                print_diff("Stdout", expected_stdout, actual_stdout);
-                print_diff("Stderr", expected_stderr, actual_stderr);
-
-                std::cout << YELLOW << "  Exit Code:\n" << RESET;
-                if (!expected_exit(exit_code))
+                // Exit code
+                if (passed_exit_code)
                 {
-                    std::cout << "    - Expected: " << GREEN
-                              << "<placeholder exit_code>" << RESET << "\n"
-                              << "    + Actual:   " << RED << exit_code << RESET
-                              << "\n";
+                    std::cout << GREEN "  ✔ Exit code is valid\n" RESET;
                 }
                 else
                 {
-                    std::cout << "    " << GREEN << "(match)" << RESET << "\n";
+                    std::cout << RED "  ✘ Exit code validation failed\n"
+                              << "    got exit code: " << exit_code << '\n'
+                              << RESET;
+                }
+
+                // Stdout
+                if (passed_stdout)
+                {
+                    std::cout << GREEN "  ✔ Stdout is valid\n" RESET;
+                }
+                else
+                {
+                    std::cout << RED "  ✘ Stdout validation failed\n"
+                              << YELLOW "    got stdout:\n"
+                              << "    --------------------\n"
+                              << actual_stdout << '\n'
+                              << "    --------------------\n"
+                              << RESET;
+                }
+
+                // Stderr
+                if (passed_stderr)
+                {
+                    std::cout << GREEN "  ✔ Stderr is valid\n" RESET;
+                }
+                else
+                {
+                    std::cout << RED "  ✘ Stderr validation failed\n"
+                              << YELLOW "    got stderr:\n"
+                              << "    --------------------\n"
+                              << actual_stderr << '\n'
+                              << "    --------------------\n"
+                              << RESET;
                 }
             }
 
@@ -434,13 +444,12 @@ namespace Runner
     {
         std::string_view test_name;
         std::string_view stdinput;
-        bool (*expected_stdout)(std::string_view);
-        bool (*expected_stderr)(std::string_view);
+        bool (*stdout_validation)(std::string_view);
+        bool (*stderr_validation)(std::string_view);
+        bool (*exit_code_validation)(int);
 
         char const* const* command_line_argv;
         std::size_t command_line_argc;
-
-        bool (*expected_exit_code)(int);
     };
 
     template <char const* BinaryPath, TestCase... Tests>
@@ -455,9 +464,9 @@ namespace Runner
         static constexpr std::array<StaticProcessData, NumTests> metadata = {
             { StaticProcessData{ Tests::test_name, Tests::stdinput,
                                  Tests::validate_stdout, Tests::validate_stderr,
+                                 Tests::validate_exit_code,
                                  ArgvBuilder<BinaryPath, Tests>::value.data(),
-                                 Tests::command_line_argc,
-                                 Tests::validate_exit_code }... }
+                                 Tests::command_line_argc }... }
         };
 
         // Function to set up pipes and fork a new process
