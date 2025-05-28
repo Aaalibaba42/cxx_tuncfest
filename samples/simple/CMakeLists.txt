@@ -14,7 +14,7 @@ include(FetchContent)
 FetchContent_Declare(
     tuncfest
     GIT_REPOSITORY https://github.com/Aaalibaba42/cxx_tuncfest.git
-    GIT_TAG main
+    GIT_TAG v1.0.0
 )
 FetchContent_MakeAvailable(tuncfest)
 
